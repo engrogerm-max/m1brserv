@@ -1,0 +1,12 @@
+{
+  "name": "APP M1 SERVIÇOS",
+  "description": "Plataforma de contratação e execução de serviços sob demanda com cadastro, negociação de orçamentos, dados do profissional, GPS ao vivo, relatórios antes/depois, banco de dados completo e painel administrativo com alarmes e edição.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

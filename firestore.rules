@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Default deny safety net for all document matches
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Users Collection rules
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+
+    // Clients Collection rules
+    match /clients/{clientId} {
+      allow read, write: if true;
+    }
+
+    // Providers Collection rules
+    match /providers/{providerId} {
+      allow read, write: if true;
+    }
+
+    // Services Collection rules
+    match /services/{serviceId} {
+      allow read, write: if true;
+    }
+
+    // Chat Messages Collection rules
+    match /chatMessages/{messageId} {
+      allow read, write: if true;
+    }
+  }
+}
