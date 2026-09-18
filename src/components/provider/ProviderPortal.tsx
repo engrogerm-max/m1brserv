@@ -486,9 +486,9 @@ export const ProviderPortal: React.FC = () => {
           const nextVal = prev - 1;
           if (nextVal <= 0) {
             clearInterval(timer);
-            // Keep the job visible without automatic rejection, just play the alarm sound so the provider knows they are late
+            // Trigger automatic reject/return to Admin on timeout ONLY for specifically dispatched jobs
             if (pendingAlertJob.status === 'despachado_prestador' || pendingAlertJob.status === 'valor_aprovado_cliente') {
-              soundManager.playAdminAlarm();
+              providerRejectDispatchedService(pendingAlertJob.id, 'Tempo limite de 5 minutos esgotado (Sem resposta do prestador)');
             }
             return 0;
           }
@@ -519,8 +519,8 @@ export const ProviderPortal: React.FC = () => {
     s => (s.providerId === provider.id || s.assignedProviderId === provider.id) && s.status === 'cancelado'
   ) : [];
 
-  // Determine if the main SPAM Modal should be open (strictly forced to remain visible until answered)
-  const isSpamModalOpen = Boolean(pendingAlertJob);
+  // Determine if the main SPAM Modal should be open
+  const isSpamModalOpen = Boolean(pendingAlertJob && !dismissedSpamIds[pendingAlertJob.id]);
 
   // Direct payment & fee transfer states
   const [dismissedFeeModalId, setDismissedFeeModalId] = useState<string | null>(null);
@@ -742,6 +742,7 @@ export const ProviderPortal: React.FC = () => {
     };
 
     submitPhotoReport(activeJob.id, finalReport);
+    setIsInteractionSpamOpen(false);
   };
 
   const handleProviderLoginSubmit = (e: React.FormEvent) => {
@@ -1589,6 +1590,17 @@ export const ProviderPortal: React.FC = () => {
             </div>
           </div>
         )}
+      </div>
+    );
+  }
+
+  if (!provider) {
+    return (
+      <div className="min-h-[85vh] flex items-center justify-center px-4 py-10 animate-fade-in" id="provider-profile-loading-screen">
+        <div className="text-center space-y-4">
+          <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Carregando credenciais do prestador...</p>
+        </div>
       </div>
     );
   }
@@ -2705,6 +2717,14 @@ export const ProviderPortal: React.FC = () => {
                     <Clock className="w-3.5 h-3.5 shrink-0" />
                     <span>SLA: {Math.floor(countdown / 60).toString().padStart(2, '0')}:{(countdown % 60).toString().padStart(2, '0')}</span>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setDismissedSpamIds(prev => ({ ...prev, [pendingAlertJob.id]: true }))}
+                    className="p-1.5 text-slate-400 hover:text-white rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-850 cursor-pointer"
+                    title="Minimizar pop-up e visualizar no painel"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
 
@@ -2985,6 +3005,16 @@ export const ProviderPortal: React.FC = () => {
               >
                 <X className="w-4 h-4 stroke-[3]" />
                 <span>RECUSAR</span>
+              </button>
+            </div>
+
+            <div className="text-center pt-1">
+              <button
+                type="button"
+                onClick={() => setDismissedSpamIds(prev => ({ ...prev, [pendingAlertJob.id]: true }))}
+                className="text-[11px] text-slate-500 hover:text-slate-300 underline cursor-pointer"
+              >
+                Minimizar Pop-up (Visualizar pelo painel mantendo o chamado ativo)
               </button>
             </div>
           </div>
@@ -3268,6 +3298,70 @@ export const ProviderPortal: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* ☕ PÁGINA DE CAFÉ DO PRESTADOR: AGUARDANDO CONFIRMAÇÃO DE PAGAMENTO */}
+      {activeJob && activeJob.status === 'aguardando_confirmacao_pagamento' && (
+        <div className="bg-slate-900 border-2 border-yellow-400/40 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 text-center relative overflow-hidden" id="provider-cafe-page">
+          <div className="absolute top-0 right-0 w-72 h-72 bg-amber-600/5 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="max-w-md mx-auto space-y-5">
+            {/* Coffee icon with beautiful animation */}
+            <div className="inline-flex p-5 rounded-full bg-amber-500/10 border-2 border-amber-500/20 text-amber-400 mb-1 animate-bounce">
+              <span className="text-4xl">☕</span>
+            </div>
+            
+            <div className="space-y-2">
+              <span className="inline-block text-[10px] text-amber-400 font-black uppercase tracking-widest bg-amber-500/15 border border-amber-500/30 px-3 py-1 rounded-full">
+                Mesa de Café & Convivência • M1 Brasil
+              </span>
+              <h2 className="text-xl sm:text-2xl font-black text-white leading-tight">
+                Hora de dar uma pausa! Pegue seu café ☕
+              </h2>
+              <p className="text-xs text-slate-300 font-sans leading-relaxed">
+                Seu relatório de conclusão fotográfico para o chamado <strong className="text-white">#{activeJob.code}</strong> foi enviado com sucesso. Agora, faça o repasse da taxa e aguarde a conciliação pela Central M1 Brasil.
+              </p>
+            </div>
+
+            {/* Platform fee summary card */}
+            <div className="bg-slate-950 border border-slate-800 p-4 rounded-2xl text-left space-y-2.5 text-[11px] font-sans">
+              <div className="flex justify-between items-center text-slate-400 border-b border-slate-850 pb-2">
+                <span>Total Recebido Direto do Cliente:</span>
+                <strong className="text-white font-mono text-xs">R$ {(activeJob.payment.totalAmount + (activeJob.rating?.tipAmount || 0)).toFixed(2)}</strong>
+              </div>
+              <div className="flex justify-between items-center text-slate-400 border-b border-slate-850 pb-2">
+                <span>Taxa da Plataforma M1 Brasil (Repasse):</span>
+                <strong className="text-amber-400 font-mono text-xs">R$ {activeJob.payment.platformFeeAmount.toFixed(2)}</strong>
+              </div>
+              <div className="flex justify-between items-center text-slate-400">
+                <span>Status do Encerramento:</span>
+                <span className="px-2 py-0.5 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 rounded-md font-black uppercase text-[9px] tracking-wider animate-pulse">
+                  Aguardando Confirmação do Pix
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setDismissedFeeModalId(null)}
+                className="flex-1 py-3 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-lg shadow-yellow-400/10 flex items-center justify-center gap-1.5"
+              >
+                <span>Visualizar Pix da Taxa</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  soundManager.playSuccessChime();
+                  providerNotifyFeeTransferred(activeJob.id);
+                }}
+                className="flex-1 py-3 bg-slate-950 hover:bg-slate-850 border border-slate-800 text-emerald-400 hover:text-emerald-300 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <span>Já fiz a transferência</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ------------------------------------------------------------- */}
       {/* ACTIVE JOB EXECUTION (IF ASSIGNED TO THIS PROVIDER)           */}

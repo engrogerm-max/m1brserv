@@ -357,25 +357,6 @@ export const Navbar: React.FC = () => {
                           <div className="text-[10px] text-slate-500 font-normal">Painel de atendimentos e Pix</div>
                         </div>
                       </button>
-
-                      {/* Administrador Option */}
-                      <button
-                        onClick={() => {
-                          setCurrentRole('admin');
-                          setShowRoleDropdown(false);
-                        }}
-                        className={`w-full text-left px-3.5 py-2.5 text-xs transition-colors flex items-center gap-2.5 cursor-pointer ${
-                          currentRole === 'admin'
-                            ? 'bg-red-500/10 text-red-400 font-bold'
-                            : 'text-slate-300 hover:bg-slate-800'
-                        }`}
-                      >
-                        <ShieldCheck className="w-4 h-4 text-red-500 shrink-0" />
-                        <div>
-                          <div className="font-bold">Portal Admin</div>
-                          <div className="text-[10px] text-slate-500 font-normal">Controle de chamados e alarmes</div>
-                        </div>
-                      </button>
                     </div>
                   )}
                 </div>

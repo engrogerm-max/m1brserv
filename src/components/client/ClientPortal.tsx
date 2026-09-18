@@ -1871,9 +1871,24 @@ export const ClientPortal: React.FC = () => {
                 </div>
               </div>
 
-              {/* Progress pill */}
-              <div className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-[10px] font-mono font-bold text-slate-400">
-                {paymentStep === 'pending' ? '1 de 2' : '2 de 2'}
+              {/* Progress pill & Close Button */}
+              <div className="flex items-center gap-2">
+                <div className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-[10px] font-mono font-bold text-slate-400">
+                  {paymentStep === 'pending' ? '1 de 2' : '2 de 2'}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPaymentService(null);
+                    setPaymentStep('none');
+                    setRatingModalService(null);
+                  }}
+                  className="p-1.5 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg cursor-pointer transition-colors border border-slate-800"
+                  id="close-completion-modal-btn"
+                  aria-label="Fechar"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
@@ -2113,6 +2128,15 @@ export const ClientPortal: React.FC = () => {
       {cancellationNoticeService && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[999995] flex items-center justify-center pt-20 pb-12 p-4 overflow-y-auto animate-fade-in" id="service-cancellation-notice-modal">
           <div className="bg-slate-950 border-3 border-rose-500 rounded-3xl max-w-md w-full max-h-[85vh] flex flex-col shadow-[0_0_60px_rgba(239,68,68,0.3)] text-left relative overflow-hidden modal-crisp p-6 text-white">
+            <button
+              type="button"
+              onClick={() => setCancellationNoticeService(null)}
+              className="absolute top-4 right-4 z-10 p-1.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg cursor-pointer transition-colors"
+              id="close-cancellation-notice-modal-btn"
+              aria-label="Fechar"
+            >
+              <X className="w-4 h-4" />
+            </button>
             <div className="flex-1 overflow-y-auto space-y-5 pr-1">
               <div className="flex flex-col items-center text-center space-y-3">
                 <div className="w-16 h-16 rounded-full bg-rose-500/10 border-2 border-rose-500/30 flex items-center justify-center text-rose-400 font-bold">
@@ -2175,9 +2199,20 @@ export const ClientPortal: React.FC = () => {
                   VISUALIZAÇÃO DA TELA DE SPAM
                 </span>
               </div>
-              <span className="text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-full">
-                Técnico a Caminho
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-full">
+                  Técnico a Caminho
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSpamOnTheWayService(null)}
+                  className="p-1.5 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg cursor-pointer transition-colors border border-slate-800"
+                  id="close-spam-on-the-way-btn"
+                  aria-label="Fechar"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* Scrollable Content Body */}
@@ -2356,6 +2391,15 @@ export const ClientPortal: React.FC = () => {
                 <span className="text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-full">
                   Central M1 Brasil
                 </span>
+                <button
+                  type="button"
+                  onClick={() => setDismissedClientSpamIds(prev => ({ ...prev, [proposedPriceService.id]: true }))}
+                  className="p-1.5 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg cursor-pointer transition-colors border border-slate-800"
+                  id="close-proposed-price-modal-btn"
+                  aria-label="Fechar"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             </div>
 

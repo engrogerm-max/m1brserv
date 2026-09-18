@@ -162,19 +162,10 @@ export const GatewayPortal: React.FC = () => {
       </div>
 
       {/* General Support & Information Bar */}
-      <div className="mt-12 text-center space-y-1.5 z-10 max-w-sm font-sans text-[11px] text-slate-400 p-4 bg-slate-950/40 rounded-2xl border border-slate-850">
+      <div className="mt-12 text-center space-y-1 z-10 max-w-sm font-sans text-[11px] text-slate-400 p-4 bg-slate-950/40 rounded-2xl border border-slate-850">
         <p className="font-semibold text-slate-300 uppercase tracking-wider">📞 Suporte Técnico M1 SERV</p>
         <p>Precisa de auxílio para acessar seu cadastro ou registrar-se?</p>
         <p className="text-red-400 font-extrabold mt-1">Central de Atendimento: {settings.supportWhatsapp || '(11)96212-2694'}</p>
-        <div className="pt-2 border-t border-slate-800/60 mt-1.5">
-          <button
-            onClick={() => setCurrentRole('admin')}
-            className="text-[10px] font-bold text-slate-500 hover:text-red-400 transition-colors uppercase tracking-widest flex items-center justify-center gap-1.5 mx-auto cursor-pointer"
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Painel Administrativo M1</span>
-          </button>
-        </div>
       </div>
     </div>
   );

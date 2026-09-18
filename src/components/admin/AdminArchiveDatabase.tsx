@@ -102,18 +102,18 @@ export const AdminArchiveDatabase: React.FC<AdminArchiveDatabaseProps> = ({
         const q = searchTerm.toLowerCase().trim();
         const matchesSearch =
           !q ||
-          s.code.toLowerCase().includes(q) ||
-          s.title.toLowerCase().includes(q) ||
-          s.clientName.toLowerCase().includes(q) ||
-          (s.providerName && s.providerName.toLowerCase().includes(q)) ||
-          (s.archivedNotes && s.archivedNotes.toLowerCase().includes(q)) ||
-          (s.photoReport?.notes && s.photoReport.notes.toLowerCase().includes(q));
+          (s.code || '').toLowerCase().includes(q) ||
+          (s.title || '').toLowerCase().includes(q) ||
+          (s.clientName || '').toLowerCase().includes(q) ||
+          (s.providerName && (s.providerName || '').toLowerCase().includes(q)) ||
+          (s.archivedNotes && (s.archivedNotes || '').toLowerCase().includes(q)) ||
+          (s.photoReport?.notes && (s.photoReport.notes || '').toLowerCase().includes(q));
 
         return matchesCat && matchesSearch;
       })
       .sort((a, b) => {
-        const timeA = a.archivedEpoch || (a.createdAt ? new Date(a.createdAt).getTime() : 0);
-        const timeB = b.archivedEpoch || (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+        const timeA = a.archivedEpoch || (a.createdAt && !isNaN(Date.parse(a.createdAt)) ? new Date(a.createdAt).getTime() : 0);
+        const timeB = b.archivedEpoch || (b.createdAt && !isNaN(Date.parse(b.createdAt)) ? new Date(b.createdAt).getTime() : 0);
         return sortOrder === 'newest' ? timeB - timeA : timeA - timeB;
       });
   }, [archivedServices, selectedCategory, searchTerm, sortOrder]);
@@ -201,7 +201,8 @@ export const AdminArchiveDatabase: React.FC<AdminArchiveDatabaseProps> = ({
     `).join('') || '<p style="font-size: 11px; color: #64748b; margin: 5px;">Nenhuma foto do "Depois" registrada.</p>';
 
     const ratingScore = srv.rating?.score;
-    const ratingStars = ratingScore ? '★'.repeat(ratingScore) + '☆'.repeat(5 - ratingScore) : 'Sem avaliação';
+    const safeRatingScore = ratingScore ? Math.max(0, Math.min(5, Math.floor(Number(ratingScore) || 0))) : 0;
+    const ratingStars = ratingScore ? '★'.repeat(safeRatingScore) + '☆'.repeat(5 - safeRatingScore) : 'Sem avaliação';
 
     const doc = iframe.contentWindow?.document || iframe.contentDocument;
     if (!doc) return;
@@ -771,13 +772,17 @@ export const AdminArchiveDatabase: React.FC<AdminArchiveDatabaseProps> = ({
                       </span>
                       <p className="font-bold text-white mt-0.5">{srv.providerName || 'Nenhum vinculado'}</p>
                       <p className="text-[11px] text-slate-400">
-                        Status Final: <strong className="text-emerald-400 font-mono">{srv.status.replace('_', ' ').toUpperCase()}</strong>
+                        Status Final: <strong className="text-emerald-400 font-mono">{(srv.status || '').replace('_', ' ').toUpperCase()}</strong>
                       </p>
-                      {srv.rating && (
-                        <p className="text-[11px] text-amber-400 font-bold">
-                          Avaliação: {'★'.repeat(srv.rating)} ({srv.rating}/5)
-                        </p>
-                      )}
+                      {srv.rating && (() => {
+                        const score = typeof srv.rating === 'object' ? srv.rating.score : srv.rating;
+                        const safeScore = Math.max(0, Math.min(5, Math.floor(Number(score) || 0)));
+                        return (
+                          <p className="text-[11px] text-amber-400 font-bold">
+                            Avaliação: {'★'.repeat(safeScore)}{'☆'.repeat(5 - safeScore)} ({score}/5)
+                          </p>
+                        );
+                      })()}
                     </div>
 
                     <div>

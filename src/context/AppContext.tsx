@@ -602,15 +602,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [isAdminUnlocked]);
 
   const [selectedCity, setSelectedCity] = useState<string>('São Paulo, SP');
-  const [isFirestoreQuotaExceeded, setIsFirestoreQuotaExceeded] = useState<boolean>(false);
-  const isFirestoreQuotaExceededRef = useRef<boolean>(false);
-
-  // Clear cached quota error on boot to allow network retry on page reload
-  useEffect(() => {
+  const [isFirestoreQuotaExceeded, setIsFirestoreQuotaExceeded] = useState<boolean>(() => {
     try {
-      localStorage.removeItem('m1_firestore_quota_exceeded');
-    } catch {}
-  }, []);
+      return localStorage.getItem('m1_firestore_quota_exceeded') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const isFirestoreQuotaExceededRef = useRef<boolean>(false);
 
   useEffect(() => {
     isFirestoreQuotaExceededRef.current = isFirestoreQuotaExceeded;
@@ -1415,8 +1414,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           } else if (remoteCl) {
             mergedClients.push(remoteCl);
           } else if (localCl) {
-            // Always keep local-only clients to prevent data loss on offline/quota states
-            mergedClients.push(localCl);
+            // Only keep local if it was recently updated/created within the 5-second optimistic locking window
+            const lastUpdated = lastLocalUpdatesRef.current[id] || 0;
+            if (Date.now() - lastUpdated < 5000) {
+              mergedClients.push(localCl);
+            }
           }
         });
         
@@ -1496,8 +1498,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           } else if (remotePr) {
             mergedProviders.push(remotePr);
           } else if (localPr) {
-            // Always keep local-only providers to prevent data loss on offline/quota states
-            mergedProviders.push(localPr);
+            // Only keep local if it was recently updated/created within the 5-second optimistic locking window
+            const lastUpdated = lastLocalUpdatesRef.current[id] || 0;
+            if (Date.now() - lastUpdated < 5000) {
+              mergedProviders.push(localPr);
+            }
           }
         });
 
@@ -1593,8 +1598,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               } else if (remoteCl) {
                 mergedClients.push(remoteCl);
               } else if (localCl) {
-                // Always keep local-only clients to prevent data loss on offline/quota states
-                mergedClients.push(localCl);
+                const lastUpdated = lastLocalUpdatesRef.current[id] || 0;
+                if (Date.now() - lastUpdated < 5000) {
+                  mergedClients.push(localCl);
+                }
               }
             });
 
@@ -1690,8 +1697,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               } else if (remotePr) {
                 mergedProviders.push(remotePr);
               } else if (localPr) {
-                // Always keep local-only providers to prevent data loss on offline/quota states
-                mergedProviders.push(localPr);
+                const lastUpdated = lastLocalUpdatesRef.current[id] || 0;
+                if (Date.now() - lastUpdated < 5000) {
+                  mergedProviders.push(localPr);
+                }
               }
             });
 
@@ -2261,13 +2270,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Find active ongoing services
   const activeServiceForClient = services.find(
-    s => s.clientId === client.id && s.status !== 'aguardando_confirmacao_pagamento' && s.status !== 'concluido_pago' && s.status !== 'cancelado'
+    s => s.clientId === client?.id && s.status !== 'aguardando_confirmacao_pagamento' && s.status !== 'concluido_pago' && s.status !== 'cancelado'
   );
 
   const activeServiceForProvider = services.find(
-    s => s.providerId === provider.id && s.status !== 'concluido_pago' && s.status !== 'cancelado'
+    s => s.providerId === provider?.id && s.status !== 'concluido_pago' && s.status !== 'cancelado'
   ) || services.find(
-    s => s.assignedProviderId === provider.id && s.status === 'despachado_prestador'
+    s => s.assignedProviderId === provider?.id && s.status === 'despachado_prestador'
   );
 
   // 1. Client creates a service request (Workflow: Goes to ADMIN for review & dispatch)
@@ -2281,6 +2290,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     address: ClientProfile['defaultAddress'];
     estimatedPrice: number;
   }): Promise<string> => {
+    if (!client) {
+      throw new Error('Nenhum cliente ativo encontrado.');
+    }
+
     const feeRate = (settings.platformFeePercent || 15) / 100;
     const fee = Math.round(newServiceData.estimatedPrice * feeRate * 100) / 100;
     const payout = Math.round((newServiceData.estimatedPrice - fee) * 100) / 100;
@@ -2857,6 +2870,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // 2. Client Accepts Proposal (CRITICAL REQUIREMENT: ONLY AFTER ACCEPTING, CLIENT SEES THE PROFESSIONAL'S DATA AND LIVE GPS)
   const acceptProposal = (serviceId: string, proposalId: string) => {
+    if (!client) return;
+
     const nowTime = `Hoje às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
 
     let chosenProposal: ServiceProposal | undefined;
@@ -3687,7 +3702,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Send message in service chat
   const sendChatMessage = async (serviceId: string, text: string, mediaUrl?: string) => {
-    const senderName = currentRole === 'client' ? client.name.split(' ')[0] : currentRole === 'provider' ? provider.name.split(' ')[0] : 'Administrador M1';
+    const senderName = currentRole === 'client' ? (client?.name || 'Cliente').split(' ')[0] : currentRole === 'provider' ? (provider?.name || 'Prestador').split(' ')[0] : 'Administrador M1';
     const senderId = currentRole === 'client' ? activeClientId : currentRole === 'provider' ? activeProviderId : 'admin';
 
     const newMsg: ChatMessage = {
@@ -4144,6 +4159,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Provider instant Pix withdrawal
   const withdrawProviderPix = (amount: number) => {
+    if (!provider) {
+      return { success: false, message: 'Nenhum prestador ativo encontrado.' };
+    }
+
     if (amount <= 0 || amount > provider.walletBalance) {
       return { success: false, message: 'Saldo insuficiente para realizar o saque Pix.' };
     }
@@ -4194,6 +4213,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const requestCategoryChange = (category: ServiceCategory, action: 'add' | 'remove') => {
+    if (!provider) return;
+
     setProviders(prev => prev.map(p => {
       if (provider && p.id === provider.id) {
         const existingRequests = p.pendingCategoriesRequests || [];

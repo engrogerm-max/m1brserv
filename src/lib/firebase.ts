@@ -16,12 +16,16 @@ const firestoreDbId = firebaseConfig.firestoreDatabaseId || '(default)';
 let dbInstance: Firestore | null = null;
 
 try {
-  dbInstance = initializeFirestore(app, {
-    experimentalForceLongPolling: true,
-    localCache: persistentLocalCache({
-      tabManager: persistentMultipleTabManager(),
-    }),
-  }, firestoreDbId);
+  if (typeof window !== 'undefined' && localStorage.getItem('m1_firestore_quota_exceeded') === 'true') {
+    console.log('🔌 Firestore initialization bypassed on module load due to cached quota exhaustion. Operating in Local-First backup mode.');
+  } else {
+    dbInstance = initializeFirestore(app, {
+      experimentalForceLongPolling: true,
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager(),
+      }),
+    }, firestoreDbId);
+  }
 } catch (e) {
   console.warn('⚠️ Error during Firestore initialization:', e);
 }
