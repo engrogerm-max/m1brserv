@@ -604,10 +604,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [selectedCity, setSelectedCity] = useState<string>('São Paulo, SP');
   const [isFirestoreQuotaExceeded, setIsFirestoreQuotaExceeded] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('m1_firestore_quota_exceeded') === 'true';
-    } catch {
-      return false;
-    }
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('m1_firestore_quota_exceeded');
+      }
+    } catch {}
+    return false;
   });
   const isFirestoreQuotaExceededRef = useRef<boolean>(false);
 
@@ -1414,11 +1415,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           } else if (remoteCl) {
             mergedClients.push(remoteCl);
           } else if (localCl) {
-            // Only keep local if it was recently updated/created within the 5-second optimistic locking window
-            const lastUpdated = lastLocalUpdatesRef.current[id] || 0;
-            if (Date.now() - lastUpdated < 5000) {
-              mergedClients.push(localCl);
-            }
+            mergedClients.push(localCl);
+            safeFirestoreSetDoc('clients', id, localCl);
           }
         });
         
@@ -1498,11 +1496,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           } else if (remotePr) {
             mergedProviders.push(remotePr);
           } else if (localPr) {
-            // Only keep local if it was recently updated/created within the 5-second optimistic locking window
-            const lastUpdated = lastLocalUpdatesRef.current[id] || 0;
-            if (Date.now() - lastUpdated < 5000) {
-              mergedProviders.push(localPr);
-            }
+            mergedProviders.push(localPr);
+            safeFirestoreSetDoc('providers', id, localPr);
           }
         });
 
@@ -1598,10 +1593,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               } else if (remoteCl) {
                 mergedClients.push(remoteCl);
               } else if (localCl) {
-                const lastUpdated = lastLocalUpdatesRef.current[id] || 0;
-                if (Date.now() - lastUpdated < 5000) {
-                  mergedClients.push(localCl);
-                }
+                mergedClients.push(localCl);
+                safeFirestoreSetDoc('clients', id, localCl);
               }
             });
 
@@ -1697,10 +1690,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               } else if (remotePr) {
                 mergedProviders.push(remotePr);
               } else if (localPr) {
-                const lastUpdated = lastLocalUpdatesRef.current[id] || 0;
-                if (Date.now() - lastUpdated < 5000) {
-                  mergedProviders.push(localPr);
-                }
+                mergedProviders.push(localPr);
+                safeFirestoreSetDoc('providers', id, localPr);
               }
             });
 

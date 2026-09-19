@@ -697,12 +697,12 @@ export const AdminPortal: React.FC = () => {
       c.email,
       c.cpf,
       c.city,
-      c.defaultAddress.street,
-      c.defaultAddress.number,
-      c.defaultAddress.neighborhood,
-      c.totalRequests,
+      c.defaultAddress?.street || '',
+      c.defaultAddress?.number || '',
+      c.defaultAddress?.neighborhood || '',
+      c.totalRequests || 0,
       c.registeredAt || new Date().toLocaleDateString('pt-BR')
-    ].map(val => `"${String(val).replace(/"/g, '""')}"`).join(';'));
+    ].map(val => `"${String(val || '').replace(/"/g, '""')}"`).join(';'));
     
     const finalString = '\uFEFF' + [headers.join(';'), ...csvContent].join('\r\n');
     const blob = new Blob([finalString], { type: 'text/csv;charset=utf-8;' });
@@ -722,15 +722,15 @@ export const AdminPortal: React.FC = () => {
       p.phone,
       p.email,
       p.documentNumber,
-      p.categories.join(', '),
+      Array.isArray(p.categories) ? p.categories.join(', ') : '',
       p.city,
       p.vehicleModel,
       p.vehiclePlate,
-      p.rating.toFixed(1),
-      p.walletBalance.toFixed(2),
+      (p.rating || 0).toFixed(1),
+      (p.walletBalance || 0).toFixed(2),
       p.status === 'active' ? 'Ativo' : 'Pendente',
       p.isAuthorized ? 'Sim' : 'Nao'
-    ].map(val => `"${String(val).replace(/"/g, '""')}"`).join(';'));
+    ].map(val => `"${String(val || '').replace(/"/g, '""')}"`).join(';'));
     
     const finalString = '\uFEFF' + [headers.join(';'), ...csvContent].join('\r\n');
     const blob = new Blob([finalString], { type: 'text/csv;charset=utf-8;' });
@@ -1306,11 +1306,11 @@ export const AdminPortal: React.FC = () => {
   // Filtered Clients
   const filteredClients = clients.filter(c => {
     if (!c) return false;
-    const q = (clientSearch || '').toLowerCase();
-    const name = (c.name || '').toLowerCase();
-    const phone = c.phone || '';
-    const email = (c.email || '').toLowerCase();
-    const cpf = c.cpf || '';
+    const q = String(clientSearch || '').toLowerCase();
+    const name = String(c.name || '').toLowerCase();
+    const phone = String(c.phone || '');
+    const email = String(c.email || '').toLowerCase();
+    const cpf = String(c.cpf || '');
     
     return name.includes(q) || phone.includes(q) || email.includes(q) || cpf.includes(q);
   });
@@ -4846,10 +4846,10 @@ export const AdminPortal: React.FC = () => {
                       <div className="text-[10px] text-emerald-400">{c.city}</div>
                     </td>
                     <td className="py-3.5 px-4 text-slate-400 text-[11px]">
-                      {c.defaultAddress.street}, {c.defaultAddress.number} - {c.defaultAddress.neighborhood}
+                      {c.defaultAddress?.street || 'N/A'}{c.defaultAddress?.number ? `, ${c.defaultAddress.number}` : ''} - {c.defaultAddress?.neighborhood || ''}
                     </td>
                     <td className="py-3.5 px-4 font-bold text-emerald-400 font-mono">
-                      {c.totalRequests}
+                      {c.totalRequests || 0}
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-1.5">
@@ -8482,10 +8482,20 @@ export const AdminPortal: React.FC = () => {
                   <label className="block text-slate-300 font-bold mb-1">Rua / Logradouro</label>
                   <input
                     type="text"
-                    value={editingClient.defaultAddress.street}
+                    value={editingClient.defaultAddress?.street || ''}
                     onChange={e => setEditingClient({
                       ...editingClient,
-                      defaultAddress: { ...editingClient.defaultAddress, street: e.target.value }
+                      defaultAddress: {
+                        ...(editingClient.defaultAddress || {
+                          street: '',
+                          number: '',
+                          neighborhood: '',
+                          city: '',
+                          state: 'SP',
+                          zipCode: ''
+                        }),
+                        street: e.target.value
+                      }
                     })}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white outline-none focus:border-emerald-500"
                   />
@@ -8494,10 +8504,20 @@ export const AdminPortal: React.FC = () => {
                   <label className="block text-slate-300 font-bold mb-1">Número</label>
                   <input
                     type="text"
-                    value={editingClient.defaultAddress.number}
+                    value={editingClient.defaultAddress?.number || ''}
                     onChange={e => setEditingClient({
                       ...editingClient,
-                      defaultAddress: { ...editingClient.defaultAddress, number: e.target.value }
+                      defaultAddress: {
+                        ...(editingClient.defaultAddress || {
+                          street: '',
+                          number: '',
+                          neighborhood: '',
+                          city: '',
+                          state: 'SP',
+                          zipCode: ''
+                        }),
+                        number: e.target.value
+                      }
                     })}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white outline-none focus:border-emerald-500"
                   />
@@ -8509,10 +8529,20 @@ export const AdminPortal: React.FC = () => {
                   <label className="block text-slate-300 font-bold mb-1">Bairro</label>
                   <input
                     type="text"
-                    value={editingClient.defaultAddress.neighborhood}
+                    value={editingClient.defaultAddress?.neighborhood || ''}
                     onChange={e => setEditingClient({
                       ...editingClient,
-                      defaultAddress: { ...editingClient.defaultAddress, neighborhood: e.target.value }
+                      defaultAddress: {
+                        ...(editingClient.defaultAddress || {
+                          street: '',
+                          number: '',
+                          neighborhood: '',
+                          city: '',
+                          state: 'SP',
+                          zipCode: ''
+                        }),
+                        neighborhood: e.target.value
+                      }
                     })}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white outline-none focus:border-emerald-500"
                   />
@@ -8521,11 +8551,21 @@ export const AdminPortal: React.FC = () => {
                   <label className="block text-slate-300 font-bold mb-1">Cidade</label>
                   <input
                     type="text"
-                    value={editingClient.city}
+                    value={editingClient.city || ''}
                     onChange={e => setEditingClient({
                       ...editingClient,
                       city: e.target.value,
-                      defaultAddress: { ...editingClient.defaultAddress, city: e.target.value }
+                      defaultAddress: {
+                        ...(editingClient.defaultAddress || {
+                          street: '',
+                          number: '',
+                          neighborhood: '',
+                          city: '',
+                          state: 'SP',
+                          zipCode: ''
+                        }),
+                        city: e.target.value
+                      }
                     })}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white outline-none focus:border-emerald-500"
                   />
