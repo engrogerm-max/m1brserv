@@ -252,7 +252,7 @@ export const ServiceOrdersList: React.FC<ServiceOrdersListProps> = ({
                       )}
                       {srv.status === 'aguardando_confirmacao_pagamento' && (
                         <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase bg-yellow-500/25 text-yellow-400 border border-yellow-500/30 animate-pulse">
-                          Aguardando Confirmação Pix
+                          Aguardando Taxa de Serviço
                         </span>
                       )}
                       {srv.status === 'concluido_pago' && (
@@ -338,52 +338,21 @@ export const ServiceOrdersList: React.FC<ServiceOrdersListProps> = ({
                       </div>
                     ) : (
                       <>
-                        {/* STEPPER PROGRESSIVO STATUS */}
-                    <div className="bg-slate-950/40 p-4 rounded-2xl border border-slate-800/80 space-y-4">
-                      <div className="flex items-center justify-between border-b border-slate-900 pb-2">
-                        <span className="text-[10px] font-black uppercase text-slate-400">Progresso do Atendimento</span>
-                        <span className="text-[10px] font-bold text-red-400">Tempo de Resposta M1</span>
-                      </div>
-                      
-                      {/* Stepper graphics */}
-                      <div className="grid grid-cols-5 gap-1 relative">
-                        {/* Connection Line */}
-                        <div className="absolute top-[18px] left-[10%] right-[10%] h-0.5 bg-slate-800 -z-10">
-                          <div 
-                            className="h-full bg-red-500 transition-all duration-500" 
-                            style={{ width: `${(activeStep / 4) * 100}%` }}
-                          />
-                        </div>
-
-                        {[
-                          { label: 'Triagem', desc: 'Central avaliando' },
-                          { label: 'Validação', desc: 'Sua aprovação' },
-                          { label: 'Aceite', desc: 'Profissional M1' },
-                          { label: 'A Caminho', desc: 'Técnico em rota' },
-                          { label: 'Laudo', desc: 'Serviço & Pix' }
-                        ].map((step, idx) => {
-                          const isCompleted = activeStep > idx;
-                          const isActive = activeStep === idx;
-                          return (
-                            <div key={idx} className="flex flex-col items-center text-center space-y-1">
-                              <div className={`w-9 h-9 rounded-full flex items-center justify-center font-black transition-all border text-xs ${
-                                isCompleted 
-                                  ? 'bg-red-600 border-red-500 text-white shadow-md shadow-red-600/10' 
-                                  : isActive 
-                                    ? 'bg-slate-900 border-red-500 text-red-400 animate-pulse ring-4 ring-red-500/10' 
-                                    : 'bg-slate-950 border-slate-800 text-slate-600'
-                              }`}>
-                                {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : idx + 1}
-                              </div>
-                              <div className="space-y-0.5">
-                                <p className={`text-[10px] font-bold leading-tight ${isActive ? 'text-red-400' : isCompleted ? 'text-white' : 'text-slate-500'}`}>{step.label}</p>
-                                <p className="text-[8.5px] text-slate-500 hidden sm:block leading-none">{step.desc}</p>
-                              </div>
+                        {/* TELA DE VER DADOS DO SERVIÇO */}
+                        <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800/80 flex items-center justify-between gap-3 animate-fade-in" id="ver-dados-servico-header">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                              <FileText className="w-4 h-4 text-amber-400" />
                             </div>
-                          );
-                        })}
-                      </div>
-                    </div>
+                            <div>
+                              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Você está visualizando os</span>
+                              <h4 className="text-xs font-black text-white uppercase tracking-wide leading-tight">Dados Gerais do Serviço</h4>
+                            </div>
+                          </div>
+                          <span className="px-2.5 py-1 rounded-full text-[9px] font-mono font-bold bg-slate-900 border border-slate-800 text-slate-400 uppercase tracking-wider">
+                            ID #{srv.code}
+                          </span>
+                        </div>
 
                     {/* DADOS GERAIS DO CHAMADO */}
                     <div className="space-y-2.5">

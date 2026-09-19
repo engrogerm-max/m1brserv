@@ -50,7 +50,17 @@ const CATEGORY_SECTION_MAP: Record<string, string> = {
   serralheria: 'construcao',
   manutencao_eletrodomesticos: 'especializadas',
   redes_protecao: 'especializadas',
-  desentupidora_pesada: 'especializadas'
+  desentupidora_pesada: 'especializadas',
+  pet_servicos: 'especializadas',
+  eventos_iluminacao: 'especializadas',
+  agro_servicos: 'externa',
+  servicos_drone: 'especializadas',
+  pesca_magnetica: 'especializadas',
+  cuidador: 'especializadas',
+  limpeza_pos_morte: 'estetica',
+  dedetizacao: 'estetica',
+  estetica_automotiva: 'estetica',
+  beleza_feminina: 'estetica'
 };
 
 export const CategoryCatalog: React.FC<CategoryCatalogProps> = ({

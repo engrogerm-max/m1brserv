@@ -6797,6 +6797,139 @@ export const AdminPortal: React.FC = () => {
               </div>
             </div>
 
+            {/* BLOCK 5: TEMA E COR DE FUNDO GLOBAL DO APLICATIVO */}
+            <div className="space-y-4 pt-2">
+              <h4 className="text-xs font-black text-purple-400 uppercase tracking-widest flex items-center gap-1.5">
+                <Palette className="w-4 h-4 text-purple-400" />
+                <span>5. ESCOLHA DE CORES E TEMA DE FUNDO DO APP (FACILITAR VISÃO)</span>
+              </h4>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Altere a cor de fundo principal e o contraste do aplicativo inteiro (para Clientes, Prestadores e Central) para melhorar a visibilidade e legibilidade em locais externos ou com reflexos do sol.
+              </p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                {/* Opção 1: Slate Escuro Clássico */}
+                <div 
+                  onClick={() => {
+                    const next = { ...settingsForm, appBackgroundTheme: 'dark_slate' };
+                    setSettingsForm(next);
+                    saveAppSettings(next);
+                  }}
+                  className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                    (settingsForm.appBackgroundTheme || 'dark_slate') === 'dark_slate'
+                      ? 'bg-slate-900 border-purple-500 shadow-md shadow-purple-500/10'
+                      : 'bg-slate-900/40 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-3.5 h-3.5 rounded-full border border-slate-700" style={{ background: 'linear-gradient(to bottom, #0a0f1e, #0a0f1e)' }} />
+                    <span className="font-bold text-xs text-white">Azul Cobalto Escuro (Padrão)</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400">Fundo original escuro sofisticado com alto brilho sutil.</p>
+                </div>
+
+                {/* Opção 2: Preto Profundo */}
+                <div 
+                  onClick={() => {
+                    const next = { ...settingsForm, appBackgroundTheme: 'pitch_black' };
+                    setSettingsForm(next);
+                    saveAppSettings(next);
+                  }}
+                  className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                    settingsForm.appBackgroundTheme === 'pitch_black'
+                      ? 'bg-slate-900 border-purple-500 shadow-md shadow-purple-500/10'
+                      : 'bg-slate-900/40 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-3.5 h-3.5 rounded-full bg-black border border-slate-800" />
+                    <span className="font-bold text-xs text-white">Preto Profundo / OLED</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400">Preto super escuro. Ideal para economizar bateria e para telas OLED.</p>
+                </div>
+
+                {/* Opção 3: Azul Marinho */}
+                <div 
+                  onClick={() => {
+                    const next = { ...settingsForm, appBackgroundTheme: 'navy_blue' };
+                    setSettingsForm(next);
+                    saveAppSettings(next);
+                  }}
+                  className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                    settingsForm.appBackgroundTheme === 'navy_blue'
+                      ? 'bg-slate-900 border-purple-500 shadow-md shadow-purple-500/10'
+                      : 'bg-slate-900/40 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-3.5 h-3.5 rounded-full border border-slate-800" style={{ backgroundColor: '#0f172a' }} />
+                    <span className="font-bold text-xs text-white">Azul Marinho Corporativo</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400">Tom de azul profissional elegante com excelente nitidez.</p>
+                </div>
+
+                {/* Opção 4: Preto Alto Contraste */}
+                <div 
+                  onClick={() => {
+                    const next = { ...settingsForm, appBackgroundTheme: 'high_visibility_dark' };
+                    setSettingsForm(next);
+                    saveAppSettings(next);
+                  }}
+                  className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                    settingsForm.appBackgroundTheme === 'high_visibility_dark'
+                      ? 'bg-slate-900 border-purple-500 shadow-md shadow-purple-500/10'
+                      : 'bg-slate-900/40 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-3.5 h-3.5 rounded-full bg-black border-2 border-emerald-500" />
+                    <span className="font-bold text-xs text-white">Super Contraste (OLED/Sol)</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400">Preto absoluto de alto contraste sem imagens de fundo. Melhor visão sob o sol.</p>
+                </div>
+
+                {/* Opção 5: Claro Tecnológico */}
+                <div 
+                  onClick={() => {
+                    const next = { ...settingsForm, appBackgroundTheme: 'light_gray' };
+                    setSettingsForm(next);
+                    saveAppSettings(next);
+                  }}
+                  className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                    settingsForm.appBackgroundTheme === 'light_gray'
+                      ? 'bg-slate-900 border-purple-500 shadow-md shadow-purple-500/10'
+                      : 'bg-slate-900/40 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-3.5 h-3.5 rounded-full bg-white border border-slate-300" />
+                    <span className="font-bold text-xs text-white">Cinza Claro Conforto (Tema Claro)</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400">Tema Claro! Fundo claro com textos pretos nítidos de altíssima legibilidade.</p>
+                </div>
+
+                {/* Opção 6: Creme Papel */}
+                <div 
+                  onClick={() => {
+                    const next = { ...settingsForm, appBackgroundTheme: 'soft_cream' };
+                    setSettingsForm(next);
+                    saveAppSettings(next);
+                  }}
+                  className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                    settingsForm.appBackgroundTheme === 'soft_cream'
+                      ? 'bg-slate-900 border-purple-500 shadow-md shadow-purple-500/10'
+                      : 'bg-slate-900/40 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-3.5 h-3.5 rounded-full border border-amber-200" style={{ backgroundColor: '#fffdf5' }} />
+                    <span className="font-bold text-xs text-white">Creme Aquecido (Tema Papel)</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400">Tema Claro suave para os olhos, reduzindo a fadiga visual.</p>
+                </div>
+              </div>
+            </div>
+
             {/* BUTTONS ROW FOOTER */}
             <div className="flex justify-end gap-3 border-t border-slate-800 pt-5">
               <button
@@ -8230,6 +8363,14 @@ export const AdminPortal: React.FC = () => {
                     <option value="Grid">Serralheria (Grid)</option>
                     <option value="ShieldCheck">Redes de Proteção (ShieldCheck)</option>
                     <option value="Activity">Desentupidora (Activity)</option>
+                    <option value="PawPrint">Pet / Pata (PawPrint)</option>
+                    <option value="PartyPopper">Eventos / Festa (PartyPopper)</option>
+                    <option value="Sprout">Agro / Planta (Sprout)</option>
+                    <option value="Plane">Drone / Vôo (Plane)</option>
+                    <option value="Magnet">Pesca Magnética / Imã (Magnet)</option>
+                    <option value="HeartHandshake">Cuidador (HeartHandshake)</option>
+                    <option value="Bug">Dedetização / Inseto (Bug)</option>
+                    <option value="Crown">Beleza Feminina / Coroa (Crown)</option>
                   </select>
                   <input
                     type="text"
@@ -8382,6 +8523,14 @@ export const AdminPortal: React.FC = () => {
                     <option value="Grid">Serralheria (Grid)</option>
                     <option value="ShieldCheck">Redes de Proteção (ShieldCheck)</option>
                     <option value="Activity">Desentupidora (Activity)</option>
+                    <option value="PawPrint">Pet / Pata (PawPrint)</option>
+                    <option value="PartyPopper">Eventos / Festa (PartyPopper)</option>
+                    <option value="Sprout">Agro / Planta (Sprout)</option>
+                    <option value="Plane">Drone / Vôo (Plane)</option>
+                    <option value="Magnet">Pesca Magnética / Imã (Magnet)</option>
+                    <option value="HeartHandshake">Cuidador (HeartHandshake)</option>
+                    <option value="Bug">Dedetização / Inseto (Bug)</option>
+                    <option value="Crown">Beleza Feminina / Coroa (Crown)</option>
                   </select>
                   <input
                     type="text"

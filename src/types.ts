@@ -505,6 +505,9 @@ export interface AppSettings {
   adminBgImage?: string;
   adminFontFamily?: 'sans' | 'serif' | 'mono' | 'jakarta' | 'playfair' | 'grotesk' | 'roboto';
 
+  // Escolha de Cores do Fundo do App (Geral para Clientes, Prestadores e Admin)
+  appBackgroundTheme?: 'dark_slate' | 'pitch_black' | 'navy_blue' | 'high_visibility_dark' | 'light_gray' | 'soft_cream';
+
   // Automatizações Operacionais (Auto-Pilot)
   autoActionsEnabled?: boolean;
   autoDirectDispatch?: boolean;

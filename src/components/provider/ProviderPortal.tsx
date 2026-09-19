@@ -780,10 +780,8 @@ export const ProviderPortal: React.FC = () => {
             </div>
           )}
 
-          <div className="text-center space-y-2">
-            <div className={`inline-flex p-3.5 rounded-2xl ${theme.bgLight} border ${theme.border30} ${theme.text} mb-1`}>
-              <Key className="w-8 h-8" />
-            </div>
+          <div className="text-center space-y-2 flex flex-col items-center">
+            <M1Logo size="xl" showGlow={true} className="w-16 h-16 sm:w-20 sm:h-20 mb-1" />
             <h2 className="text-xl sm:text-2xl font-black text-white tracking-wide">
               {settings.providerPageTitle || 'Área do Prestador Credenciado'}
             </h2>
@@ -932,7 +930,7 @@ export const ProviderPortal: React.FC = () => {
 
         {/* REGISTRATION MODAL */}
         {isRegisterModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-start justify-center pt-8 sm:pt-14 pb-12 p-4 overflow-y-auto">
             <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
               
               {/* Wizard Progress Header */}
@@ -2379,7 +2377,7 @@ export const ProviderPortal: React.FC = () => {
 
       {/* ⚠️ MODAL TELA AMARELA: PAGAMENTO DIRETO AO PRESTADOR E TRANSFERÊNCIA DA TAXA M1 */}
       {activeJob && activeJob.status === 'aguardando_confirmacao_pagamento' && dismissedFeeModalId !== activeJob.id && (
-        <div className="fixed inset-0 bg-yellow-950/80 backdrop-blur-xl z-[100] flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+        <div className="fixed inset-0 bg-yellow-950/80 backdrop-blur-xl z-[100] flex items-start justify-center pt-8 sm:pt-14 pb-12 p-4 overflow-y-auto animate-fade-in">
           <div className="bg-yellow-950/95 border-4 border-yellow-400 w-full max-w-lg rounded-3xl p-6 shadow-[0_0_100px_rgba(250,204,21,0.65)] relative text-left text-white max-h-[85vh] flex flex-col overflow-hidden">
             
             {/* Header controls: Yellow Status Badge & Close button */}
@@ -2546,7 +2544,13 @@ export const ProviderPortal: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2 self-stretch sm:self-auto justify-end">
           {/* Online Toggle */}
           <button
-            onClick={toggleProviderOnline}
+            onClick={() => {
+              if (activeJob) {
+                alert('Você não pode alterar seu status online/offline enquanto possuir um chamado em andamento ou pagamento pendente de confirmação.');
+                return;
+              }
+              toggleProviderOnline();
+            }}
             className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer shadow-md ${
               provider.isOnline
                 ? 'bg-emerald-500 text-slate-950 shadow-emerald-500/20 hover:bg-emerald-450'
@@ -2682,7 +2686,7 @@ export const ProviderPortal: React.FC = () => {
 
       {/* 🚨 MODAL OVERLAY DE ALERTA SPAM DE ALTA PRIORIDADE DO PRESTADOR */}
       {isSpamModalOpen && pendingAlertJob && (
-        <div className="fixed inset-0 z-[999990] bg-black/94 backdrop-blur-xl flex justify-center items-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[999990] bg-black/94 backdrop-blur-xl flex justify-center items-start pt-8 sm:pt-14 pb-12 p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200">
           <div className="bg-slate-950 border-3 border-amber-500 rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-[0_0_90px_rgba(245,158,11,0.35)] relative text-left overflow-hidden modal-crisp">
             
             {/* Top Bar with Pulsing Beacon & SLA Timer - PINNED HEADER */}
@@ -3133,7 +3137,7 @@ export const ProviderPortal: React.FC = () => {
 
       {/* 🔔 MODAL CENTRAL DE NOTIFICAÇÕES & HISTÓRICO DE SPAMS */}
       {isNotificationCenterOpen && (
-        <div className="fixed inset-0 z-[999980] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150 text-left">
+        <div className="fixed inset-0 z-[999980] bg-black/85 backdrop-blur-md flex items-start justify-center pt-8 sm:pt-14 pb-12 p-4 animate-in fade-in duration-150 text-left overflow-y-auto">
           <div className="bg-slate-950 border border-slate-800 rounded-3xl max-w-xl w-full p-5 sm:p-6 shadow-2xl max-h-[85vh] flex flex-col overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-850 pb-3 shrink-0">
               <div className="flex items-center gap-2.5 text-amber-400">

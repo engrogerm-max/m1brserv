@@ -90,6 +90,9 @@ export const INITIAL_SETTINGS: AppSettings = {
   adminThemeColor: 'emerald',
   adminBgStyle: 'dark',
 
+  // Escolha de Cores do Fundo do App (Geral)
+  appBackgroundTheme: 'dark_slate',
+
   // Automatizações Operacionais (Auto-Pilot)
   autoActionsEnabled: false,
   autoDirectDispatch: false,
@@ -337,6 +340,106 @@ export const SERVICE_CATEGORIES: CategoryInfo[] = [
     badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
     defaultEtaMinutes: 15,
     averageExecutionMinutes: 120
+  },
+  {
+    id: 'pet_servicos',
+    name: 'Serviços Pet / Cuidados',
+    iconName: 'PawPrint',
+    description: 'Banho, tosa, passeios, pet sitter e cuidados veterinários básicos em domicílio com garantia M1.',
+    basePrice: 110,
+    badgeColor: 'bg-orange-100 text-orange-800 border-orange-200',
+    defaultEtaMinutes: 15,
+    averageExecutionMinutes: 60
+  },
+  {
+    id: 'eventos_iluminacao',
+    name: 'Eventos & Iluminação',
+    iconName: 'PartyPopper',
+    description: 'Instalação de luzes, som, projetores, tendas e suporte geral para festas e eventos residenciais e corporativos.',
+    basePrice: 180,
+    badgeColor: 'bg-purple-100 text-purple-800 border-purple-200',
+    defaultEtaMinutes: 15,
+    averageExecutionMinutes: 120
+  },
+  {
+    id: 'agro_servicos',
+    name: 'Agro & Jardinagem',
+    iconName: 'Sprout',
+    description: 'Manutenção de pequenas plantações, podas técnicas de árvores, adubação de solo e cuidados agro-residenciais especializados.',
+    basePrice: 160,
+    badgeColor: 'bg-green-100 text-green-800 border-green-200',
+    defaultEtaMinutes: 15,
+    averageExecutionMinutes: 120
+  },
+  {
+    id: 'servicos_drone',
+    name: 'Operador de Drone',
+    iconName: 'Plane',
+    description: 'Mapeamento técnico aéreo, inspeção predial de telhados, filmagens de alta resolução e monitoramento especializado.',
+    basePrice: 200,
+    badgeColor: 'bg-sky-100 text-sky-800 border-sky-200',
+    defaultEtaMinutes: 15,
+    averageExecutionMinutes: 90
+  },
+  {
+    id: 'pesca_magnetica',
+    name: 'Pesca Magnética',
+    iconName: 'Magnet',
+    description: 'Recuperação de ferramentas, chaves, celulares e detritos metálicos em poços, lagos e canais com superímãs.',
+    basePrice: 150,
+    badgeColor: 'bg-rose-100 text-rose-800 border-rose-200',
+    defaultEtaMinutes: 15,
+    averageExecutionMinutes: 90
+  },
+  {
+    id: 'cuidador',
+    name: 'Cuidador & Acompanhante',
+    iconName: 'HeartHandshake',
+    description: 'Cuidados e acompanhamento humanizado especializado para idosos, gestantes ou pessoas em recuperação pós-cirúrgica.',
+    basePrice: 130,
+    badgeColor: 'bg-teal-100 text-teal-800 border-teal-200',
+    defaultEtaMinutes: 15,
+    averageExecutionMinutes: 120
+  },
+  {
+    id: 'limpeza_pos_morte',
+    name: 'Limpeza Pós-Morte',
+    iconName: 'Trash2',
+    description: 'Higienização técnica profunda, desinfecção biológica e eliminação de odores após óbito com alto protocolo sanitário.',
+    basePrice: 350,
+    badgeColor: 'bg-stone-100 text-stone-800 border-stone-200',
+    defaultEtaMinutes: 15,
+    averageExecutionMinutes: 180
+  },
+  {
+    id: 'dedetizacao',
+    name: 'Dedetização & Controle',
+    iconName: 'Bug',
+    description: 'Controle de pragas residenciais, baratas, cupins, formigas, aranhas e desinfecção de ambientes homologada.',
+    basePrice: 160,
+    badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    defaultEtaMinutes: 15,
+    averageExecutionMinutes: 90
+  },
+  {
+    id: 'estetica_automotiva',
+    name: 'Estética Automotiva',
+    iconName: 'Car',
+    description: 'Lavagem técnica detalhada, polimento de faróis, cristalização de pintura e higienização interna de veículos.',
+    basePrice: 140,
+    badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
+    defaultEtaMinutes: 15,
+    averageExecutionMinutes: 90
+  },
+  {
+    id: 'beleza_feminina',
+    name: 'Beleza Feminina',
+    iconName: 'Crown',
+    description: 'Serviços de escova, alisamento capilar, manicure, pedicure, design de sobrancelhas e maquiagem profissional.',
+    basePrice: 130,
+    badgeColor: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200',
+    defaultEtaMinutes: 15,
+    averageExecutionMinutes: 90
   }
 ];
 

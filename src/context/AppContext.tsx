@@ -635,12 +635,42 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const writeTimersRef = useRef<Record<string, NodeJS.Timeout>>({});
   const writeQueueRef = useRef<Record<string, any>>({});
 
-  const safeFirestoreSetDoc = useCallback(async (collectionName: string, docId: string, data: any) => {
+  const safeFirestoreSetDoc = useCallback(async (collectionName: string, docId: string, data: any, writeImmediately?: boolean) => {
     if (isFirestoreQuotaExceededRef.current) return;
     const key = `${collectionName}/${docId}`;
 
     if (writeTimersRef.current[key]) {
       clearTimeout(writeTimersRef.current[key]);
+    }
+
+    // Default to write immediately (true) for lightning-fast real-time reactivity, unless explicitly disabled
+    const shouldWriteImmediately = writeImmediately !== false;
+
+    if (shouldWriteImmediately) {
+      delete writeQueueRef.current[key];
+      delete writeTimersRef.current[key];
+      try {
+        if (db) {
+          await setDoc(doc(db, collectionName, docId), cleanUndefined(data));
+        }
+      } catch (err: any) {
+        console.warn(`🔥 Firestore setDoc failed inside safeFirestoreSetDoc for ${collectionName}/${docId}:`, err);
+        const errMsg = err?.message || String(err);
+        if (
+          errMsg.toLowerCase().includes('quota') || 
+          errMsg.toLowerCase().includes('exhausted') || 
+          err?.code === 'resource-exhausted'
+        ) {
+          setIsFirestoreQuotaExceeded(true);
+          isFirestoreQuotaExceededRef.current = true;
+          try {
+            localStorage.setItem('m1_firestore_quota_exceeded', 'true');
+          } catch {}
+        } else {
+          handleFirestoreError(err, OperationType.WRITE, `${collectionName}/${docId}`);
+        }
+      }
+      return;
     }
 
     writeQueueRef.current[key] = data;
@@ -810,9 +840,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const saved = localStorage.getItem(DB_KEY_CATEGORIES);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.some((c: any) => c.id === 'geral')) {
-          return parsed;
-        }
+        const merged = [...parsed];
+        SERVICE_CATEGORIES.forEach(defaultCat => {
+          if (!merged.some(c => c.id === defaultCat.id)) {
+            merged.push(defaultCat);
+          }
+        });
+        return merged;
       }
     } catch {
       // ignore
@@ -1075,7 +1109,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
           if (!prevSrv || !isDeepEqual(prevSrv, srv)) {
             lastLocalUpdatesRef.current[srv.id] = Date.now();
-            safeFirestoreSetDoc('services', srv.id, srv);
+            safeFirestoreSetDoc('services', srv.id, srv, true);
           }
         });
       }, 0);
@@ -1339,7 +1373,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               } catch {}
               return sortedServices;
             });
-          }, 100);
+          }, 15);
         }, (error) => {
           setIsServicesLoading(false);
           console.warn('⚠️ Firestore connection offline/restricted. Working with cached offline storage.', error);
@@ -1616,7 +1650,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               } catch {}
               return sortedClients;
             });
-          }, 100);
+          }, 15);
         }, (error) => {
           console.warn('⚠️ Clients real-time snapshot error:', error);
           const errMsg = error?.message || String(error);
@@ -1713,7 +1747,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               } catch {}
               return sortedProviders;
             });
-          }, 100);
+          }, 15);
         }, (error) => {
           console.warn('⚠️ Providers real-time snapshot error:', error);
           const errMsg = error?.message || String(error);
@@ -2375,7 +2409,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
 
     // Synchronously write to Firestore immediately so that the Admin receives the request instantly
-    await safeFirestoreSetDoc('services', serviceId, createdService);
+    await safeFirestoreSetDoc('services', serviceId, createdService, true);
 
     setServices(prev => [createdService, ...prev]);
 

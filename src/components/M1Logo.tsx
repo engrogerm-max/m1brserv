@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useApp } from '../context/AppContext';
 
 interface M1LogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'hero';
@@ -20,6 +21,41 @@ export const M1Logo: React.FC<M1LogoProps> = ({
     hero: 'w-40 h-40'
   };
 
+  let settings: any = null;
+  try {
+    const app = useApp();
+    settings = app.settings;
+  } catch (err) {
+    // Fallback if rendered outside AppProvider
+  }
+
+  const [imageError, setImageError] = useState(false);
+
+  // Reset image error status when the configured logo URL changes
+  useEffect(() => {
+    setImageError(false);
+  }, [settings?.mainLogoUrl]);
+
+  if (settings?.mainLogoUrl && !imageError) {
+    return (
+      <div
+        className={`relative inline-flex items-center justify-center shrink-0 ${sizeMap[size]} ${className}`}
+        id="m1-brand-logo"
+      >
+        {showGlow && (
+          <div className="absolute inset-0 bg-red-600/35 blur-xl rounded-full scale-125 pointer-events-none" />
+        )}
+        <img
+          src={settings.mainLogoUrl}
+          alt={settings.companyName || 'M1 Logo'}
+          className="w-full h-full object-contain rounded-xl select-none"
+          onError={() => setImageError(true)}
+          referrerPolicy="no-referrer"
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       className={`relative inline-flex items-center justify-center shrink-0 ${sizeMap[size]} ${className}`}
@@ -29,7 +65,7 @@ export const M1Logo: React.FC<M1LogoProps> = ({
         <div className="absolute inset-0 bg-red-600/35 blur-xl rounded-full scale-125 pointer-events-none" />
       )}
 
-      {/* Vector Match of M1 Logo from 5.jpg */}
+      {/* Vector Match of M1 Logo */}
       <svg
         viewBox="0 0 500 500"
         fill="none"
@@ -85,4 +121,3 @@ export const M1Logo: React.FC<M1LogoProps> = ({
     </div>
   );
 };
-

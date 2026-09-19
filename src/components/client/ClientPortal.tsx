@@ -326,13 +326,13 @@ export const ClientPortal: React.FC = () => {
       case 'aguardando_confirmacao_pagamento':
         return {
           theme: 'yellow' as const,
-          badge: 'Pix Enviado - Em Validação',
-          title: 'Aguardando Validação do Pix',
+          badge: 'Taxa de Serviço Pendente',
+          title: 'Aguardando o prestador efetuar o pagamento da taxa de serviço',
           borderColor: 'border-yellow-500/55',
           textColor: 'text-yellow-400',
           bgColor: 'bg-yellow-500/10',
           iconColor: 'text-yellow-400',
-          desc: 'Você registrou o pagamento via Pix. A Central M1 está validando a transação para emitir o termo oficial e liberar sua garantia formal de 90 dias.',
+          desc: 'O serviço foi concluído! No momento, estamos aguardando o prestador efetuar o pagamento da taxa de serviço para emitir o termo oficial e liberar sua garantia formal de 90 dias.',
         };
       case 'concluido_pago':
         return {
@@ -458,6 +458,7 @@ export const ClientPortal: React.FC = () => {
   const [clientCancelFeeAgreed, setClientCancelFeeAgreed] = useState<Record<string, boolean>>({});
   const [clientTermAlertTriggered, setClientTermAlertTriggered] = useState<Record<string, boolean>>({});
   const [dismissedClientSpamIds, setDismissedClientSpamIds] = useState<Record<string, boolean>>({});
+  const [hasShownSpamProposal, setHasShownSpamProposal] = useState<Record<string, boolean>>({});
   const [zoomedPhotoUrl, setZoomedPhotoUrl] = useState<string | null>(null);
 
   const isProposedPriceSpamOpen = Boolean(proposedPriceService && !dismissedClientSpamIds[proposedPriceService.id]);
@@ -523,10 +524,21 @@ export const ClientPortal: React.FC = () => {
   // Sempre que surgir um orçamento definido pelo admin, garante que o SPAM de proposta esteja aberto
   useEffect(() => {
     if (proposedPriceService?.id) {
-      setDismissedClientSpamIds(prev => ({ ...prev, [proposedPriceService.id]: false }));
-      soundManager.playAdminAlarm();
+      const cacheKey = `${proposedPriceService.id}_${proposedPriceService.estimatedPrice}_${proposedPriceService.estimatedArrivalMinutes || 15}_${proposedPriceService.additionalNotes || ''}`;
+      setHasShownSpamProposal(prev => {
+        if (prev[cacheKey]) return prev;
+        // Only force open and play alert if this specific proposal/price/ETA/notes hasn't been shown yet in this session
+        setDismissedClientSpamIds(old => ({ ...old, [proposedPriceService.id]: false }));
+        soundManager.playAdminAlarm();
+        return { ...prev, [cacheKey]: true };
+      });
     }
-  }, [proposedPriceService?.id, proposedPriceService?.estimatedPrice]);
+  }, [
+    proposedPriceService?.id,
+    proposedPriceService?.estimatedPrice,
+    proposedPriceService?.estimatedArrivalMinutes,
+    proposedPriceService?.additionalNotes
+  ]);
 
   const [regCepSearching, setRegCepSearching] = useState(false);
   const [regCepError, setRegCepError] = useState('');
@@ -700,7 +712,7 @@ export const ClientPortal: React.FC = () => {
         else if (req.status === 'chegou_ao_local') friendlyStatus = 'O especialista chegou ao local!';
         else if (req.status === 'em_execucao') friendlyStatus = 'Serviço iniciado em execução';
         else if (req.status === 'relatorio_enviado') friendlyStatus = 'Laudo Técnico pronto para aprovação final!';
-        else if (req.status === 'aguardando_confirmacao_pagamento') friendlyStatus = 'Aguardando validação do Pix pela Central M1';
+        else if (req.status === 'aguardando_confirmacao_pagamento') friendlyStatus = 'Aguardando o prestador efetuar o pagamento da taxa de serviço';
         else if (req.status === 'concluido_pago') friendlyStatus = 'Serviço concluído e pago com sucesso!';
         else if (req.status === 'cancelado') friendlyStatus = 'Solicitação cancelada';
 
@@ -1499,14 +1511,32 @@ export const ClientPortal: React.FC = () => {
 
                 <div>
                   <label className="block text-slate-300 font-bold mb-1">Descrição Detalhada da Sua Necessidade *</label>
-                  <textarea
-                    required
-                    value={serviceDescription}
-                    onChange={e => setServiceDescription(e.target.value)}
-                    rows={4}
-                    placeholder={settings.clientFormDescPlaceholder || 'Escreva o que está acontecendo...'}
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-red-500 rounded-xl p-3 text-white outline-none"
-                  />
+                  {(() => {
+                    const selectedCatInfo = categories.find(c => c.id === selectedCategory);
+                    const placeholderText = selectedCatInfo?.description || settings.clientFormDescPlaceholder || 'Escreva o que está acontecendo...';
+                    return (
+                      <>
+                        <textarea
+                          required
+                          value={serviceDescription}
+                          onChange={e => setServiceDescription(e.target.value)}
+                          rows={4}
+                          placeholder={placeholderText}
+                          className="w-full bg-slate-950 border border-slate-800 focus:border-red-500 rounded-xl p-3 text-white placeholder-slate-500 outline-none"
+                        />
+                        {selectedCatInfo && (
+                          <div className="mt-1.5 p-3 rounded-xl bg-slate-950/60 border border-slate-850 flex flex-wrap gap-1.5 items-center text-[11px] text-slate-400">
+                            <span className="font-black text-red-500 uppercase tracking-widest text-[10px]">
+                              {selectedCatInfo.name}:
+                            </span>
+                            <span>
+                              {selectedCatInfo.description || 'Instalação, reparo, limpeza ou suporte técnico geral sob garantia M1.'}
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
 
                 <div>
@@ -1848,285 +1878,227 @@ export const ClientPortal: React.FC = () => {
 
       {/* 💳 COHESIVE SEQUENTIAL CLIENT COMPLETION FLOW (SPAM) */}
       {paymentService && paymentStep !== 'none' && (
-        <div className="fixed inset-0 bg-black/92 backdrop-blur-lg z-[999995] flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-fade-in" id="client-sequential-completion-modal">
-          <div className="bg-slate-950 border-3 border-emerald-500 rounded-3xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-[0_0_80px_rgba(16,185,129,0.35)] text-left relative overflow-hidden modal-crisp">
+        <div className="fixed inset-0 bg-black/92 backdrop-blur-lg z-[999995] flex items-start justify-center pt-8 sm:pt-14 pb-12 p-3 sm:p-5 overflow-y-auto animate-fade-in" id="client-sequential-completion-modal">
+          <div className="bg-slate-950 border-4 border-yellow-400 rounded-3xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-[0_0_80px_rgba(250,204,21,0.45)] text-left relative overflow-hidden modal-crisp">
             
-            {/* Header / Step Tracker */}
-            <div className="p-5 border-b border-slate-850 shrink-0 bg-slate-950 flex items-center justify-between">
+            {/* Header: Yellow Notice Banner */}
+            <div className="p-5 border-b border-yellow-400/20 shrink-0 bg-yellow-400/10 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                  {paymentStep === 'pending' ? (
-                    <CreditCard className="w-5 h-5" />
-                  ) : (
-                    <Sparkles className="w-5 h-5" />
-                  )}
+                <div className="w-10 h-10 rounded-xl bg-yellow-400/25 border border-yellow-400 flex items-center justify-center text-yellow-400 animate-pulse">
+                  <Sparkles className="w-5 h-5 text-yellow-400" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black uppercase tracking-wider text-emerald-400">
-                    {paymentStep === 'pending' ? 'Etapa 1: Confirmação & Pagamento' : 'Etapa 2: Avaliação do Prestador'}
+                  <h3 className="text-sm font-black uppercase tracking-wider text-yellow-400">
+                    Aviso: Serviço Concluído ☕
                   </h3>
-                  <p className="text-[10px] text-slate-400 uppercase font-mono font-bold">
-                    Chamado: <span className="text-white">#{paymentService.code}</span>
+                  <p className="text-[10px] text-slate-300 uppercase font-mono font-bold">
+                    Chamado: <span className="text-yellow-400 font-black">#{paymentService.code}</span>
                   </p>
                 </div>
               </div>
 
-              {/* Progress pill & Close Button */}
-              <div className="flex items-center gap-2">
-                <div className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-[10px] font-mono font-bold text-slate-400">
-                  {paymentStep === 'pending' ? '1 de 2' : '2 de 2'}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPaymentService(null);
-                    setPaymentStep('none');
-                    setRatingModalService(null);
-                  }}
-                  className="p-1.5 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg cursor-pointer transition-colors border border-slate-800"
-                  id="close-completion-modal-btn"
-                  aria-label="Fechar"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setPaymentService(null);
+                  setPaymentStep('none');
+                  setRatingModalService(null);
+                }}
+                className="p-1.5 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg cursor-pointer transition-colors border border-slate-800"
+                id="close-completion-modal-btn"
+                aria-label="Fechar"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* Scrollable Body */}
+            {/* Scrollable Body containing everything in one screen */}
             <div className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-5 text-slate-200">
               
-              {paymentStep === 'pending' && (
-                <div className="space-y-5">
-                  <div className="space-y-1.5">
-                    <h4 className="text-lg font-extrabold text-white leading-tight">
-                      Atendimento Executado com Sucesso! 🎉
-                    </h4>
-                    <p className="text-xs text-slate-300 leading-relaxed font-sans">
-                      O profissional credenciado <strong className="text-emerald-400">{paymentService.providerName || paymentService.assignedProviderName || 'Especialista M1'}</strong> concluiu o chamado de <strong className="text-white">"{paymentService.title}"</strong>. Revise o valor e prossiga com o pagamento direto.
-                    </p>
-                  </div>
+              <div className="space-y-1">
+                <h4 className="text-base font-extrabold text-white leading-tight">
+                  Atendimento Executado com Sucesso! 🎉
+                </h4>
+                <p className="text-xs text-slate-300 leading-relaxed font-sans">
+                  O profissional credenciado <strong className="text-yellow-400">{paymentService.providerName || paymentService.assignedProviderName || 'Especialista M1'}</strong> concluiu o chamado de <strong className="text-white">"{paymentService.title}"</strong>.
+                </p>
+              </div>
 
-                  {/* Valor Cobrado Display */}
-                  <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] uppercase font-black text-slate-400 tracking-wider">
-                        Valor Total do Serviço
-                      </span>
-                      <span className="block text-[11px] text-slate-400 font-sans">
-                        Pague diretamente ao profissional
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <span className="font-mono text-3xl font-black text-emerald-400 block leading-none">
-                        R$ {paymentService.estimatedPrice.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Payment Method Selector */}
-                  <div className="space-y-2">
-                    <span className="text-xs font-bold text-slate-200 block">
-                      Selecione a forma de pagamento realizada:
-                    </span>
-                    <div className="grid grid-cols-3 gap-2.5">
-                      {[
-                        { id: 'pix', label: 'Pix', icon: QrCode },
-                        { id: 'dinheiro', label: 'Dinheiro', icon: Banknote },
-                        { id: 'cartao', label: 'Cartão', icon: CreditCard },
-                      ].map((method) => {
-                        const Icon = method.icon;
-                        const isSelected = selectedPaymentMethod === method.id;
-                        return (
-                          <button
-                            key={method.id}
-                            type="button"
-                            onClick={() => setSelectedPaymentMethod(method.id as any)}
-                            className={`p-3.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                              isSelected
-                                ? 'bg-emerald-500/15 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)] font-black'
-                                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
-                            }`}
-                          >
-                            <Icon className={`w-5 h-5 ${isSelected ? 'text-emerald-400' : 'text-slate-500'}`} />
-                            <span className="text-[11px] uppercase tracking-wide leading-none">{method.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Dynamic payment method details */}
-                  {selectedPaymentMethod === 'pix' && (
-                    <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3.5 animate-fade-in">
-                      <div className="flex items-center gap-2 pb-2 border-b border-slate-850">
-                        <QrCode className="w-4 h-4 text-emerald-400" />
-                        <span className="text-xs font-black uppercase text-white">Chave Pix do Profissional</span>
-                      </div>
-                      <p className="text-[11px] text-slate-300 leading-relaxed font-sans">
-                        Efetue o Pix copiando a chave abaixo ou escaneando o QR Code do prestador. Após a transferência, confirme abaixo.
-                      </p>
-
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          readOnly
-                          value={paymentService.providerPhone || paymentService.assignedProviderPhone || 'Chave Pix'}
-                          className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 font-mono text-xs text-white text-center select-all outline-none"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const pixKey = paymentService.providerPhone || paymentService.assignedProviderPhone || 'Chave Pix';
-                            navigator.clipboard.writeText(pixKey);
-                            soundManager.playSuccessChime();
-                          }}
-                          className="px-3.5 py-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-slate-750 text-emerald-400 hover:text-emerald-300 rounded-xl font-bold text-xs cursor-pointer transition-colors"
-                        >
-                          Copiar
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedPaymentMethod === 'dinheiro' && (
-                    <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-2 animate-fade-in">
-                      <div className="flex items-center gap-2">
-                        <Banknote className="w-4 h-4 text-emerald-400" />
-                        <span className="text-xs font-black uppercase text-white">Pagamento em Espécie</span>
-                      </div>
-                      <p className="text-[11px] text-slate-300 leading-relaxed font-sans">
-                        Por favor, entregue o valor de <strong className="text-white">R$ {paymentService.estimatedPrice.toFixed(2)}</strong> em dinheiro diretamente ao profissional no local.
-                      </p>
-                    </div>
-                  )}
-
-                  {selectedPaymentMethod === 'cartao' && (
-                    <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-2 animate-fade-in">
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="w-4 h-4 text-emerald-400" />
-                        <span className="text-xs font-black uppercase text-white">Maquininha de Cartões</span>
-                      </div>
-                      <p className="text-[11px] text-slate-300 leading-relaxed font-sans">
-                        Por favor, utilize o cartão de débito ou crédito diretamente na maquininha física do profissional. Confirme o valor de <strong className="text-white">R$ {paymentService.estimatedPrice.toFixed(2)}</strong> antes de digitar sua senha.
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Submit Button */}
-                  <button
-                    type="button"
-                    disabled={!selectedPaymentMethod}
-                    onClick={() => {
-                      soundManager.playSuccessChime();
-                      setPaymentStep('rating');
-                    }}
-                    className={`w-full py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                      selectedPaymentMethod
-                        ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/25'
-                        : 'bg-slate-850 text-slate-500 cursor-not-allowed border border-slate-800'
-                    }`}
-                  >
-                    <span>Confirmar Pagamento e Ir para Avaliação</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
+              {/* Valor a ser pago ao prestador */}
+              <div className="p-4 bg-yellow-400/5 border border-yellow-400/20 rounded-2xl flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] uppercase font-black text-yellow-400 tracking-wider block">
+                    Valor a ser pago ao prestador
+                  </span>
+                  <span className="block text-[10px] text-slate-400 font-sans">
+                    Pague diretamente ao profissional no local
+                  </span>
                 </div>
-              )}
+                <div className="text-right">
+                  <span className="font-mono text-2xl sm:text-3xl font-black text-yellow-400 block leading-none">
+                    R$ {paymentService.estimatedPrice.toFixed(2)}
+                  </span>
+                </div>
+              </div>
 
-              {paymentStep === 'rating' && (
-                <div className="space-y-5">
-                  <div className="space-y-1 text-center">
-                    <h4 className="text-lg font-extrabold text-white leading-tight">
-                      Como foi o atendimento do profissional? ⭐
-                    </h4>
-                    <p className="text-xs text-slate-300 font-sans">
-                      Sua avaliação é sigilosa e fundamental para o controle de qualidade M1 Brasil.
-                    </p>
-                  </div>
-
-                  {/* Star Rating Selector */}
-                  <div className="flex items-center justify-center gap-2.5 py-3">
-                    {[1, 2, 3, 4, 5].map((star) => (
+              {/* Payment Method Selector (PIX / DINHEIRO / CARTÃO) */}
+              <div className="space-y-2">
+                <span className="text-xs font-bold text-slate-200 block">
+                  Selecione a forma de pagamento realizada:
+                </span>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {[
+                    { id: 'pix', label: 'Pix', icon: QrCode },
+                    { id: 'dinheiro', label: 'Dinheiro', icon: Banknote },
+                    { id: 'cartao', label: 'Cartão', icon: CreditCard },
+                  ].map((method) => {
+                    const Icon = method.icon;
+                    const isSelected = selectedPaymentMethod === method.id;
+                    return (
                       <button
-                        key={star}
+                        key={method.id}
                         type="button"
-                        onClick={() => {
-                          setRatingScore(star);
-                          soundManager.playSuccessChime();
-                        }}
-                        className="p-1 cursor-pointer hover:scale-110 transition-transform"
+                        onClick={() => setSelectedPaymentMethod(method.id as any)}
+                        className={`p-3.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-yellow-400/20 border-yellow-400 text-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.15)] font-black'
+                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                        }`}
                       >
-                        <Star
-                          className={`w-10 h-10 ${
-                            star <= ratingScore
-                              ? 'text-amber-400 fill-amber-400'
-                              : 'text-slate-800 fill-transparent'
-                          }`}
-                        />
+                        <Icon className={`w-5 h-5 ${isSelected ? 'text-yellow-400' : 'text-slate-500'}`} />
+                        <span className="text-[11px] uppercase tracking-wide leading-none">{method.label}</span>
                       </button>
-                    ))}
-                  </div>
+                    );
+                  })}
+                </div>
+              </div>
 
-                  {/* Interactive rating title based on score */}
-                  <div className="text-center">
-                    <span className="px-3 py-1 bg-slate-900 border border-slate-850 rounded-full text-xs font-black uppercase text-amber-400">
-                      {ratingScore === 5 ? 'Excelente 👑' : ratingScore === 4 ? 'Muito Bom 👍' : ratingScore === 3 ? 'Bom / Regular 😊' : ratingScore === 2 ? 'Ruim ⚠️' : 'Péssimo 🚨'}
-                    </span>
+              {/* Dynamic details */}
+              {selectedPaymentMethod === 'pix' && (
+                <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-2.5 animate-fade-in">
+                  <div className="flex items-center gap-2 pb-1.5 border-b border-slate-850">
+                    <QrCode className="w-4 h-4 text-yellow-400" />
+                    <span className="text-xs font-black uppercase text-white">Chave Pix do Profissional</span>
                   </div>
-
-                  {/* Comments Fields */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-200 block">
-                      Escreva um comentário opcional sobre o serviço prestado:
-                    </label>
-                    <textarea
-                      value={ratingComment}
-                      onChange={(e) => setRatingComment(e.target.value)}
-                      placeholder="Escreva como foi sua experiência..."
-                      className="w-full h-24 bg-slate-900 border border-slate-800 rounded-2xl p-3.5 text-xs text-white placeholder-slate-500 outline-none focus:border-emerald-500 transition-colors resize-none"
+                  <p className="text-[10px] text-slate-300 leading-relaxed font-sans">
+                    Copie a chave Pix para realizar a transferência direta:
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={paymentService.providerPhone || paymentService.assignedProviderPhone || 'Chave Pix'}
+                      className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 font-mono text-xs text-white text-center select-all outline-none"
                     />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const pixKey = paymentService.providerPhone || paymentService.assignedProviderPhone || 'Chave Pix';
+                        navigator.clipboard.writeText(pixKey);
+                        soundManager.playSuccessChime();
+                      }}
+                      className="px-3.5 py-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-slate-750 text-yellow-400 hover:text-yellow-300 rounded-xl font-bold text-xs cursor-pointer transition-colors"
+                    >
+                      Copiar
+                    </button>
                   </div>
-
-                  {/* Submit and Finish Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const rating: ServiceRating = {
-                        id: 'rating-' + Date.now(),
-                        serviceId: paymentService.id,
-                        serviceCode: paymentService.code,
-                        serviceTitle: paymentService.title,
-                        clientId: client.id,
-                        clientName: client.name,
-                        providerId: paymentService.providerId || paymentService.assignedProviderId || '',
-                        providerName: paymentService.providerName || paymentService.assignedProviderName || 'Prestador Credenciado',
-                        score: ratingScore,
-                        comment: ratingComment,
-                        tags: [],
-                        createdAt: new Date().toISOString(),
-                        tipAmount: 0,
-                      };
-                      approveReportAndPay(paymentService.id, rating, selectedPaymentMethod || 'pix');
-                      soundManager.playSuccessChime();
-                      
-                      // Transition to finished state
-                      setPaymentStep('finished');
-                    }}
-                    className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black uppercase tracking-wider rounded-2xl shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all"
-                  >
-                    <span>Enviar Avaliação & Encerrar Atendimento</span>
-                    <Check className="w-4 h-4 stroke-[3]" />
-                  </button>
                 </div>
               )}
+
+              {/* ⭐️ Avaliação do Prestador de Serviço */}
+              <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-2xl space-y-3">
+                <div className="text-center space-y-1">
+                  <span className="text-xs font-bold text-slate-200 block">
+                    Avalie o atendimento do profissional:
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-center gap-2.5 py-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => {
+                        setRatingScore(star);
+                        soundManager.playSuccessChime();
+                      }}
+                      className="p-1 cursor-pointer hover:scale-110 transition-transform"
+                    >
+                      <Star
+                        className={`w-8 h-8 ${
+                          star <= ratingScore
+                            ? 'text-yellow-400 fill-yellow-400'
+                            : 'text-slate-800 fill-transparent'
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+
+                <div className="text-center">
+                  <span className="px-3 py-1 bg-slate-950 border border-slate-800 rounded-full text-[10px] font-black uppercase text-yellow-400">
+                    {ratingScore === 5 ? 'Excelente 👑' : ratingScore === 4 ? 'Muito Bom 👍' : ratingScore === 3 ? 'Bom / Regular 😊' : ratingScore === 2 ? 'Ruim ⚠️' : 'Péssimo 🚨'}
+                  </span>
+                </div>
+
+                <div className="space-y-1.5 pt-1">
+                  <textarea
+                    value={ratingComment}
+                    onChange={(e) => setRatingComment(e.target.value)}
+                    placeholder="Escreva um comentário opcional sobre o serviço prestado..."
+                    className="w-full h-16 bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-500 outline-none focus:border-yellow-400 transition-colors resize-none"
+                  />
+                </div>
+              </div>
 
             </div>
+
+            {/* Bottom Bar: Single Confirm Button */}
+            <div className="p-4 border-t border-yellow-400/20 bg-slate-950 shrink-0">
+              <button
+                type="button"
+                disabled={!selectedPaymentMethod}
+                onClick={() => {
+                  const rating: ServiceRating = {
+                    id: 'rating-' + Date.now(),
+                    serviceId: paymentService.id,
+                    serviceCode: paymentService.code,
+                    serviceTitle: paymentService.title,
+                    clientId: client.id,
+                    clientName: client.name,
+                    providerId: paymentService.providerId || paymentService.assignedProviderId || '',
+                    providerName: paymentService.providerName || paymentService.assignedProviderName || 'Prestador Credenciado',
+                    score: ratingScore,
+                    comment: ratingComment,
+                    tags: [],
+                    createdAt: new Date().toISOString(),
+                    tipAmount: 0,
+                  };
+                  approveReportAndPay(paymentService.id, rating, selectedPaymentMethod || 'pix');
+                  soundManager.playSuccessChime();
+                  
+                  // Transition directly to finished to reset views and active elements
+                  setPaymentStep('finished');
+                }}
+                className={`w-full py-4 text-xs font-black uppercase tracking-wider rounded-2xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  selectedPaymentMethod
+                    ? 'bg-yellow-400 hover:bg-yellow-300 text-slate-950 shadow-xl shadow-yellow-400/25'
+                    : 'bg-slate-850 text-slate-500 cursor-not-allowed border border-slate-800'
+                }`}
+              >
+                <span>Confirmar</span>
+                <Check className="w-4 h-4 stroke-[3]" />
+              </button>
+            </div>
+
           </div>
         </div>
       )}
 
       {/* 📢 ON-SCREEN SERVICE CANCELLATION NOTIFICATION */}
       {cancellationNoticeService && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[999995] flex items-center justify-center pt-20 pb-12 p-4 overflow-y-auto animate-fade-in" id="service-cancellation-notice-modal">
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[999995] flex items-start justify-center pt-8 sm:pt-14 pb-12 p-4 overflow-y-auto animate-fade-in" id="service-cancellation-notice-modal">
           <div className="bg-slate-950 border-3 border-rose-500 rounded-3xl max-w-md w-full max-h-[85vh] flex flex-col shadow-[0_0_60px_rgba(239,68,68,0.3)] text-left relative overflow-hidden modal-crisp p-6 text-white">
             <button
               type="button"
@@ -2188,7 +2160,7 @@ export const ClientPortal: React.FC = () => {
 
       {/* 🏁 SPAM MODAL: TÉCNICO A CAMINHO OVERLAY */}
       {spamOnTheWayService && (
-        <div className="fixed inset-0 bg-black/92 backdrop-blur-md z-[999990] flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-fade-in" id="spam-on-the-way-modal">
+        <div className="fixed inset-0 bg-black/92 backdrop-blur-md z-[999990] flex items-start justify-center pt-8 sm:pt-14 pb-12 p-3 sm:p-5 overflow-y-auto animate-fade-in" id="spam-on-the-way-modal">
           <div className="spam-content-container bg-slate-950 border-3 border-amber-500 rounded-3xl max-w-md w-full max-h-[85vh] flex flex-col shadow-[0_0_60px_rgba(245,158,11,0.25)] text-left relative overflow-hidden modal-crisp">
             
             {/* Header: VISUALIZAÇÃO DA TELA DE SPAM */}
@@ -2364,7 +2336,7 @@ export const ClientPortal: React.FC = () => {
       {/* 🏁 SPAM MODAL: ORÇAMENTO DO ADMIN DISPONÍVEL (SOBREPOSTO NA TELA) */}
       {isProposedPriceSpamOpen && proposedPriceService && (
         <div 
-          className="fixed inset-0 z-[999995] bg-black/92 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-fade-in" 
+          className="fixed inset-0 z-[999995] bg-black/92 backdrop-blur-md flex items-start justify-center pt-8 sm:pt-14 pb-12 p-3 sm:p-5 overflow-y-auto animate-fade-in" 
           id="spam-proposed-price-modal"
         >
           <div className="spam-content-container bg-slate-950 border-3 border-amber-500 rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-[0_0_80px_rgba(245,158,11,0.35)] relative text-left overflow-hidden modal-crisp">
@@ -2618,7 +2590,7 @@ export const ClientPortal: React.FC = () => {
       )}
 
       {/* 🛰️ ACTIVE REQUEST STATUS TRACKING HUD OVERLAY ("SPAM SOBREPOSTO NA TELA") */}
-      {activeService && !isProposedPriceSpamOpen && !spamOnTheWayService && (() => {
+      {activeService && isOverlayOpen && !isProposedPriceSpamOpen && !spamOnTheWayService && (() => {
         const statusConfig = getStatusConfig(activeService.status);
         const isThemeGreen = statusConfig.theme === 'green';
         const isThemeYellow = statusConfig.theme === 'yellow';
@@ -2636,26 +2608,38 @@ export const ClientPortal: React.FC = () => {
             } w-full max-w-xl rounded-3xl p-5 sm:p-6 shadow-2xl relative space-y-4 my-4 sm:my-8 cursor-default text-left`}>
               
               {/* Header */}
-              <div className="flex items-center gap-3 border-b border-slate-800/80 pb-3">
-                <div className={`p-2.5 rounded-xl bg-slate-950 border ${
-                  isThemeGreen ? 'border-green-500/30 text-green-400' :
-                  isThemeYellow ? 'border-yellow-500/30 text-yellow-400' :
-                  'border-red-500/30 text-red-400'
-                }`}>
-                  <Zap className="w-5 h-5 animate-pulse" />
-                </div>
-                <div>
-                  <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
-                    isThemeGreen ? 'bg-green-500/10 text-green-400 border-green-500/20' :
-                    isThemeYellow ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
-                    'bg-red-500/10 text-red-400 border-red-500/20'
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-xl bg-slate-950 border ${
+                    isThemeGreen ? 'border-green-500/30 text-green-400' :
+                    isThemeYellow ? 'border-yellow-500/30 text-yellow-400' :
+                    'border-red-500/30 text-red-400'
                   }`}>
-                    {statusConfig.badge}
-                  </span>
-                  <h3 className="text-sm font-black text-white mt-1">
-                    Acompanhamento: {activeService.code}
-                  </h3>
+                    <Zap className="w-5 h-5 animate-pulse" />
+                  </div>
+                  <div>
+                    <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                      isThemeGreen ? 'bg-green-500/10 text-green-400 border-green-500/20' :
+                      isThemeYellow ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
+                      'bg-red-500/10 text-red-400 border-red-500/20'
+                    }`}>
+                      {statusConfig.badge}
+                    </span>
+                    <h3 className="text-sm font-black text-white mt-1">
+                      Acompanhamento: {activeService.code}
+                    </h3>
+                  </div>
                 </div>
+                
+                {/* Clean, high-fidelity minimize button */}
+                <button
+                  type="button"
+                  onClick={() => setIsOverlayOpen(false)}
+                  className="p-1.5 rounded-full hover:bg-slate-900 border border-slate-800/80 text-slate-400 hover:text-white transition-all cursor-pointer flex items-center justify-center shrink-0"
+                  title="Minimizar Acompanhamento"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
               {/* CRITICAL INFORMATION AT THE TOP (Price and ETA/Status) */}
@@ -2863,13 +2847,13 @@ export const ClientPortal: React.FC = () => {
 
                 {/* 4. PAYMENT PENDING VALIDATION BY ADMIN */}
                 {activeService.status === 'aguardando_confirmacao_pagamento' && (
-                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-4 space-y-2 text-left animate-fade-in">
+                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-4 space-y-2 text-left animate-fade-in" id="client-pending-fee-payment-warning">
                     <div className="flex items-center gap-1.5 text-yellow-400">
                       <Clock className="w-4 h-4 animate-spin text-yellow-400 shrink-0" />
-                      <span className="text-[10px] font-black uppercase tracking-wider">Pagamento em Análise de Segurança</span>
+                      <span className="text-[11px] font-black uppercase tracking-wider text-yellow-400">Aguardando o prestador efetuar o pagamento da taxa de serviço</span>
                     </div>
                     <p className="text-[11px] text-slate-300 leading-relaxed font-sans">
-                      Seu comprovante / transferência Pix foi registrado com sucesso! A Central M1 está confirmando a transação com o prestador credenciado para emitir o termo oficial de encerramento e liberar sua garantia formal de 90 dias. Fique tranquilo, esse processo é concluído rapidamente.
+                      O serviço foi totalmente executado e avaliado por você! No momento, a liberação da sua garantia formal de 90 dias e do termo oficial de conclusão M1 está pendente de o prestador parceiro efetuar o repasse da taxa de intermediação para a Central. Assim que realizado, seu chamado será 100% homologado.
                     </p>
                   </div>
                 )}

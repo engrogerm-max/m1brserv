@@ -152,6 +152,153 @@ const MainAppContent: React.FC = () => {
     }
   };
 
+  const getThemeStyleTag = () => {
+    const theme = settings.appBackgroundTheme || 'dark_slate';
+    if (theme === 'light_gray') {
+      return (
+        <style>{`
+          /* Overrides for Light Gray theme */
+          body, .min-h-screen {
+            color: #0f172a !important; /* text-slate-900 */
+          }
+          /* Card backgrounds */
+          .bg-slate-900, .bg-slate-950, .bg-slate-900\\/98, .bg-slate-950\\/40, .bg-slate-900\\/40, .bg-slate-900\\/60, .bg-slate-950\\/50, .bg-slate-900\\/80, .bg-slate-950\\/80 {
+            background-color: #ffffff !important;
+            color: #1e293b !important;
+            border-color: #e2e8f0 !important; /* border-slate-200 */
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05) !important;
+          }
+          /* Text colors in cards */
+          .text-slate-400, .text-slate-300, .text-slate-200, .text-slate-100 {
+            color: #334155 !important; /* text-slate-700 */
+          }
+          .text-white {
+            color: #0f172a !important; /* text-slate-900 */
+          }
+          /* Input boxes */
+          input, select, textarea {
+            background-color: #f8fafc !important; /* bg-slate-50 */
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important; /* border-slate-300 */
+          }
+          input::placeholder, textarea::placeholder {
+            color: #94a3b8 !important;
+          }
+          /* Specific lists and tables */
+          table th {
+            color: #1e293b !important;
+            background-color: #f1f5f9 !important;
+          }
+          table td {
+            border-bottom-color: #e2e8f0 !important;
+          }
+          /* Labels */
+          label {
+            color: #475569 !important; /* text-slate-600 */
+          }
+          /* Tabs and borders */
+          .border-slate-800, .border-slate-850, .border-slate-700, .border-slate-750 {
+            border-color: #e2e8f0 !important;
+          }
+          /* Scrollbars */
+          .scrollbar-thin {
+            scrollbar-color: #cbd5e1 #f1f5f9;
+          }
+          /* Icons and text that should be dark */
+          .text-indigo-400, .text-cyan-400, .text-purple-400 {
+            color: #4f46e5 !important; /* Indigo-600 */
+          }
+          .text-yellow-400 {
+            color: #d97706 !important; /* Amber-600 */
+          }
+        `}</style>
+      );
+    } else if (theme === 'soft_cream') {
+      return (
+        <style>{`
+          /* Overrides for Soft Cream theme */
+          body, .min-h-screen {
+            color: #451a03 !important; /* text-amber-950 */
+          }
+          /* Card backgrounds */
+          .bg-slate-900, .bg-slate-950, .bg-slate-900\\/98, .bg-slate-950\\/40, .bg-slate-900\\/40, .bg-slate-900\\/60, .bg-slate-950\\/50, .bg-slate-900\\/80, .bg-slate-950\\/80 {
+            background-color: #fffdf5 !important; /* Soft warm paper */
+            color: #451a03 !important;
+            border-color: #ebdcb9 !important; /* Soft golden border */
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.04) !important;
+          }
+          /* Text colors in cards */
+          .text-slate-400, .text-slate-300, .text-slate-200, .text-slate-100 {
+            color: #78350f !important; /* text-amber-900 */
+          }
+          .text-white {
+            color: #451a03 !important;
+          }
+          /* Input boxes */
+          input, select, textarea {
+            background-color: #faf6eb !important;
+            color: #451a03 !important;
+            border-color: #d9c396 !important;
+          }
+          input::placeholder, textarea::placeholder {
+            color: #a1824a !important;
+          }
+          /* Specific lists and tables */
+          table th {
+            color: #451a03 !important;
+            background-color: #f7eed7 !important;
+          }
+          table td {
+            border-bottom-color: #ebdcb9 !important;
+          }
+          /* Labels */
+          label {
+            color: #92400e !important;
+          }
+          /* Tabs and borders */
+          .border-slate-800, .border-slate-850, .border-slate-700, .border-slate-750 {
+            border-color: #ebdcb9 !important;
+          }
+          /* Icons and text that should be warm */
+          .text-indigo-400, .text-cyan-400, .text-purple-400 {
+            color: #b45309 !important;
+          }
+          .text-yellow-400 {
+            color: #d97706 !important;
+          }
+        `}</style>
+      );
+    } else if (theme === 'high_visibility_dark') {
+      return (
+        <style>{`
+          /* Overrides for High Visibility Dark theme */
+          body, .min-h-screen {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+          }
+          .bg-slate-900, .bg-slate-950, .bg-slate-900\\/98, .bg-slate-950\\/40, .bg-slate-900\\/40, .bg-slate-900\\/60, .bg-slate-950\\/50, .bg-slate-900\\/80, .bg-slate-950\\/80 {
+            background-color: #000000 !important;
+            border-color: #334155 !important; /* border-slate-700 */
+            border-width: 2px !important;
+          }
+          .text-slate-400, .text-slate-300, .text-slate-200, .text-slate-100 {
+            color: #f1f5f9 !important; /* text-slate-100 */
+          }
+          .text-slate-500 {
+            color: #cbd5e1 !important;
+          }
+          input, select, textarea {
+            background-color: #000000 !important;
+            border-color: #ffffff !important;
+            border-width: 2px !important;
+            color: #ffffff !important;
+          }
+        `}</style>
+      );
+    }
+    return null;
+  };
+
   const getBgStyle = (role: 'client' | 'provider' | 'admin') => {
     let bgImage = '';
     let fallback = '';
@@ -167,8 +314,25 @@ const MainAppContent: React.FC = () => {
     }
 
     const url = bgImage || fallback;
+    const theme = settings.appBackgroundTheme || 'dark_slate';
+    
+    let gradient = 'linear-gradient(to bottom, rgba(10, 15, 30, 0.92), rgba(10, 15, 30, 0.97))';
+    if (theme === 'pitch_black') {
+      gradient = 'linear-gradient(to bottom, rgba(0, 0, 0, 0.97), rgba(0, 0, 0, 0.99))';
+    } else if (theme === 'navy_blue') {
+      gradient = 'linear-gradient(to bottom, rgba(15, 23, 42, 0.95), rgba(10, 15, 30, 0.98))';
+    } else if (theme === 'high_visibility_dark') {
+      gradient = 'linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1))';
+    } else if (theme === 'light_gray') {
+      gradient = 'linear-gradient(to bottom, rgba(248, 250, 252, 0.95), rgba(241, 245, 249, 0.97))';
+    } else if (theme === 'soft_cream') {
+      gradient = 'linear-gradient(to bottom, rgba(253, 251, 247, 0.96), rgba(247, 245, 237, 0.98))';
+    }
+
+    const useBgImage = theme !== 'high_visibility_dark';
+
     return {
-      backgroundImage: `linear-gradient(to bottom, rgba(10, 15, 30, 0.92), rgba(10, 15, 30, 0.97)), url(${url})`,
+      backgroundImage: useBgImage ? `${gradient}, url(${url})` : gradient,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundAttachment: 'fixed',
@@ -282,6 +446,7 @@ const MainAppContent: React.FC = () => {
         ...getBgStyle(currentRole as any)
       }}
     >
+      {getThemeStyleTag()}
       {/* Top Navbar */}
       <Navbar />
 
