@@ -200,7 +200,10 @@ export const AdminPortal: React.FC = () => {
     profileEditRequests,
     resolveProfileEditRequest,
     acknowledgeProfileEditRequest,
-    syncDatabaseData
+    syncDatabaseData,
+    operatingCities,
+    addOperatingCity,
+    removeOperatingCity
   } = useApp();
 
   const unacknowledgedProfileCount = profileEditRequests?.filter(r => r.status === 'pending' && !r.acknowledged).length || 0;
@@ -245,6 +248,10 @@ export const AdminPortal: React.FC = () => {
   // Service Filters & Search
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+
+  // Cidades em Operação State
+  const [newCityInput, setNewCityInput] = useState('');
+  const [cityActionFeedback, setCityActionFeedback] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [showArchivedInServices, setShowArchivedInServices] = useState<boolean>(false);
 
@@ -591,6 +598,24 @@ export const AdminPortal: React.FC = () => {
 
       return false;
     });
+  };
+
+  // Helper to filter providers by client's region (city) matching
+  const isProviderInClientRegion = (p: ProviderProfile, clientCity: string): boolean => {
+    if (!clientCity) return true;
+    const pCity = p.city || '';
+    
+    const normalize = (str: string) => 
+      str
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+
+    const normClient = normalize(clientCity);
+    const normProv = normalize(pCity);
+
+    return normProv.includes(normClient) || normClient.includes(normProv);
   };
 
   const [newProviderForm, setNewProviderForm] = useState({
@@ -2536,7 +2561,7 @@ export const AdminPortal: React.FC = () => {
                   .filter(s => ['solicitado', 'aguardando_despacho_admin', 'aguardando_confirmacao_cliente', 'valor_aprovado_cliente', 'despachado_prestador', 'em_deslocamento', 'chegou_ao_local', 'em_execucao', 'relatorio_enviado', 'aceito_pelo_prestador', 'aguardando_confirmacao_pagamento'].includes(s.status))
                   .map(srv => {
                     const matchedProviders = [...providers]
-                      .filter(p => p.isAuthorized && isProviderQualifiedForCategory(p, srv.category))
+                      .filter(p => p.isAuthorized && isProviderQualifiedForCategory(p, srv.category) && isProviderInClientRegion(p, srv.address?.city || ''))
                       .sort((a, b) => {
                         // Sort by online status
                         if (a.isOnline && !b.isOnline) return -1;
@@ -5887,6 +5912,107 @@ export const AdminPortal: React.FC = () => {
               </button>
             </form>
           </div>
+
+          {/* ---------------- SEÇÃO COMPLEMENTAR: CIDADES ATIVAS / EM OPERAÇÃO ---------------- */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-4 col-span-1 lg:col-span-2 mt-6">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5 text-white">
+                <MapPin className="w-5 h-5 text-red-500 animate-pulse" />
+                <div>
+                  <h3 className="text-base font-bold">Cidades Cadastradas para Operação (M1 Brasil)</h3>
+                  <p className="text-[11px] text-slate-400">Gerencie a lista de cidades onde a plataforma está em operação ativa para clientes e prestadores.</p>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-[10px] font-black uppercase tracking-wider">
+                Cidades Ativas: {operatingCities.length}
+              </span>
+            </div>
+
+            {/* Feedback Alert */}
+            {cityActionFeedback && (
+              <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 text-xs flex items-center gap-1.5 animate-fade-in">
+                <CheckCircle2 className="w-4 h-4 animate-bounce" />
+                <span>{cityActionFeedback}</span>
+              </div>
+            )}
+
+            {/* Formulário de Cadastro de Nova Cidade */}
+            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-3">
+              <span className="text-xs font-black text-slate-300 uppercase tracking-wider block">Cadastrar Nova Cidade em Operação</span>
+              <div className="flex flex-col sm:flex-row gap-2.5">
+                <input
+                  type="text"
+                  value={newCityInput}
+                  onChange={e => setNewCityInput(e.target.value)}
+                  placeholder="Ex: São José do Rio Preto, SP"
+                  className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none focus:border-red-500 font-semibold"
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (newCityInput.trim()) {
+                        addOperatingCity(newCityInput.trim());
+                        setCityActionFeedback(`Cidade "${newCityInput.trim()}" cadastrada com sucesso!`);
+                        setNewCityInput('');
+                        setTimeout(() => setCityActionFeedback(null), 3500);
+                      }
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (newCityInput.trim()) {
+                      addOperatingCity(newCityInput.trim());
+                      setCityActionFeedback(`Cidade "${newCityInput.trim()}" cadastrada com sucesso!`);
+                      setNewCityInput('');
+                      setTimeout(() => setCityActionFeedback(null), 3500);
+                    } else {
+                      alert("Por favor, digite o nome da cidade (Ex: São José do Rio Preto, SP)");
+                    }
+                  }}
+                  className="px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 shadow-md shadow-red-600/20 animate-pulse"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Adicionar Cidade</span>
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-500">Sempre informe a cidade acompanhada do estado para correta geolocalização e filtragem (Ex: São José do Rio Preto, SP).</p>
+            </div>
+
+            {/* Grid / Lista das Cidades já Cadastradas */}
+            <div className="space-y-2">
+              <span className="text-xs font-black text-slate-400 uppercase tracking-wider block">Lista de Cidades em Operação</span>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {operatingCities && operatingCities.length > 0 ? (
+                  operatingCities.map((city, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2 bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 px-3 py-2 rounded-xl text-xs text-slate-300 font-semibold transition-all group shadow-sm"
+                    >
+                      <MapPin className="w-3.5 h-3.5 text-slate-400 group-hover:text-red-500 transition-colors" />
+                      <span>{city}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(`Tem certeza de que deseja remover a cidade "${city}" da operação da plataforma?`)) {
+                            removeOperatingCity(city);
+                            setCityActionFeedback(`Cidade "${city}" removida da operação.`);
+                            setTimeout(() => setCityActionFeedback(null), 3500);
+                          }
+                        }}
+                        className="text-slate-500 hover:text-red-400 hover:bg-slate-800 p-0.5 rounded transition-colors cursor-pointer ml-1"
+                        title="Remover Cidade"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-xs text-slate-500 py-3 italic">Nenhuma cidade cadastrada ainda. Use o campo acima para cadastrar cidades de operação.</div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -7305,7 +7431,7 @@ export const AdminPortal: React.FC = () => {
                     >
                       <option value="">-- Selecionar Prestador --</option>
                       {providers
-                        .filter(p => isProviderQualifiedForCategory(p, activeRefusedService.category))
+                        .filter(p => isProviderQualifiedForCategory(p, activeRefusedService.category) && isProviderInClientRegion(p, activeRefusedService.address?.city || ''))
                         .map(p => {
                           const catsLabel = (p.categories || []).map(cat => {
                             const found = categories.find(c => c.id === cat);
@@ -7566,7 +7692,7 @@ export const AdminPortal: React.FC = () => {
                       <option value="">-- Selecionar Prestador Disponível --</option>
                        {(() => {
                        const sortedProvs = [...providers]
-                          .filter(p => p.isAuthorized && isProviderQualifiedForCategory(p, selectedService.category))
+                          .filter(p => p.isAuthorized && isProviderQualifiedForCategory(p, selectedService.category) && isProviderInClientRegion(p, selectedService.address?.city || ''))
                           .sort((a, b) => {
                             if (a.isOnline && !b.isOnline) return -1;
                             if (!a.isOnline && b.isOnline) return 1;

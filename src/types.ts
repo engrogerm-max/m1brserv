@@ -325,6 +325,7 @@ export interface ProviderProfile {
   professionalExp?: string;
   dailyAvailability?: string;
   providedServices?: string[];
+  cep?: string;
 }
 
 export interface ClientProfile {

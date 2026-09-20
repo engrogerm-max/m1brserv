@@ -46,7 +46,8 @@ export const Navbar: React.FC = () => {
     isAdminAuthenticated,
     isClientAuthenticated,
     isProviderAuthenticated,
-    isAdminUnlocked
+    isAdminUnlocked,
+    operatingCities
   } = useApp();
 
   const [showNotifications, setShowNotifications] = useState(false);
@@ -71,7 +72,7 @@ export const Navbar: React.FC = () => {
   const pendingRequestsCount = services.filter(s => s.status === 'solicitado' || s.status === 'negociando').length;
   const reportsPendingCount = services.filter(s => s.status === 'relatorio_enviado').length;
 
-  const CITIES = [
+  const CITIES = operatingCities && operatingCities.length > 0 ? operatingCities : [
     'São Paulo, SP',
     'Campinas, SP',
     'Santos, SP',

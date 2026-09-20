@@ -89,6 +89,9 @@ interface AppContextType {
   setSoundEnabled: (enabled: boolean) => void;
   selectedCity: string;
   setSelectedCity: (city: string) => void;
+  operatingCities: string[];
+  addOperatingCity: (city: string) => Promise<void>;
+  removeOperatingCity: (city: string) => Promise<void>;
 
   // Active records
   activeServiceForClient: ServiceRequest | undefined;
@@ -853,6 +856,86 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
     return SERVICE_CATEGORIES;
   });
+
+  // 1.2 Operating Cities Table (Editable in Admin, used for Provider Registration/Profile and Client Selection)
+  const DEFAULT_CITIES = [
+    'São Paulo, SP',
+    'Campinas, SP',
+    'Santos, SP',
+    'São José dos Campos, SP',
+    'Ribeirão Preto, SP',
+    'Sorocaba, SP',
+    'Rio de Janeiro, RJ',
+    'Curitiba, PR',
+    'Belo Horizonte, MG'
+  ];
+
+  const [operatingCities, setOperatingCities] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('m1_operating_cities');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return DEFAULT_CITIES;
+  });
+
+  // Listen to operating_cities in Firestore in real-time
+  useEffect(() => {
+    if (isFirestoreQuotaExceeded) return;
+    let unsubscribe: (() => void) | null = null;
+    let debounceTimer: NodeJS.Timeout | null = null;
+
+    try {
+      if (db) {
+        const citiesCol = collection(db, 'operating_cities');
+        unsubscribe = onSnapshot(citiesCol, (snapshot) => {
+          if (debounceTimer) clearTimeout(debounceTimer);
+
+          debounceTimer = setTimeout(() => {
+            if (snapshot.empty) {
+              console.log('⚡ Firestore operating_cities collection is empty. Populating default cities...');
+              DEFAULT_CITIES.forEach(async (city) => {
+                const cityId = city.replace(/[^a-zA-Z0-9]/g, '_');
+                await safeFirestoreSetDoc('operating_cities', cityId, { name: city });
+              });
+              setOperatingCities(DEFAULT_CITIES);
+            } else {
+              const fetchedCities: string[] = [];
+              snapshot.forEach((docSnapshot) => {
+                const data = docSnapshot.data();
+                if (data && data.name) {
+                  fetchedCities.push(data.name);
+                }
+              });
+              fetchedCities.sort((a, b) => a.localeCompare(b));
+              setOperatingCities(fetchedCities);
+              localStorage.setItem('m1_operating_cities', JSON.stringify(fetchedCities));
+            }
+          }, 300);
+        });
+      }
+    } catch (err) {
+      console.error('Error listening to operating_cities:', err);
+    }
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+      if (debounceTimer) clearTimeout(debounceTimer);
+    };
+  }, [db, isFirestoreQuotaExceeded]);
+
+  const addOperatingCity = async (city: string) => {
+    const trimmed = city.trim();
+    if (!trimmed) return;
+    const cityId = trimmed.replace(/[^a-zA-Z0-9]/g, '_');
+    await safeFirestoreSetDoc('operating_cities', cityId, { name: trimmed });
+  };
+
+  const removeOperatingCity = async (city: string) => {
+    const trimmed = city.trim();
+    if (!trimmed) return;
+    const cityId = trimmed.replace(/[^a-zA-Z0-9]/g, '_');
+    await safeFirestoreDeleteDoc('operating_cities', cityId);
+  };
 
   // 2. Clients Database Table
   const [clients, setClientsState] = useState<ClientProfile[]>(() => {
@@ -6011,6 +6094,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setSoundEnabled,
         selectedCity,
         setSelectedCity,
+        operatingCities,
+        addOperatingCity,
+        removeOperatingCity,
         isClientAuthenticated,
         authenticatedClientId,
         loginClient,

@@ -132,7 +132,8 @@ export const ProviderPortal: React.FC = () => {
     addOrUpdateProvider,
     isAdminUnlocked,
     triggerSyncEvent,
-    editServiceDetails
+    editServiceDetails,
+    operatingCities
   } = useApp();
 
   const providerTheme = settings.providerThemeColor || 'emerald';
@@ -586,6 +587,9 @@ export const ProviderPortal: React.FC = () => {
   const [vehiclePlateInput, setVehiclePlateInput] = useState<string>('');
   const [bankAccountInput, setBankAccountInput] = useState<string>('');
   const [avatarInput, setAvatarInput] = useState<string>('');
+  const [cepInput, setCepInput] = useState<string>('');
+  const [isCheckingCep, setIsCheckingCep] = useState<boolean>(false);
+  const [cepFeedback, setCepFeedback] = useState<string>('');
 
   // Pagination States
   const [demandsPage, setDemandsPage] = useState(1);
@@ -610,6 +614,7 @@ export const ProviderPortal: React.FC = () => {
       setVehiclePlateInput(provider.vehiclePlate || '');
       setBankAccountInput((provider as any).bankAccount || '');
       setAvatarInput(provider.avatar || provider.documents?.facePhoto || provider.documents?.facePhotoUrl || '');
+      setCepInput(provider.cep || '');
     }
   }, [provider]);
 
@@ -4936,15 +4941,76 @@ export const ProviderPortal: React.FC = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-slate-400 font-bold mb-1">Cidade de Atendimento</label>
-                  <input
-                    type="text"
-                    value={cityInput}
-                    onChange={e => setCityInput(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white outline-none focus:border-emerald-500"
-                    placeholder="Ex: São Paulo, SP"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-400 font-bold mb-1">CEP de Localização</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={cepInput}
+                        onChange={e => {
+                          const val = e.target.value.replace(/\D/g, '').slice(0, 8);
+                          setCepInput(val);
+                        }}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white outline-none focus:border-emerald-500 font-mono"
+                        placeholder="Ex: 01310100"
+                      />
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (cepInput.length !== 8) {
+                            setCepFeedback('❌ CEP deve ter 8 dígitos');
+                            return;
+                          }
+                          setIsCheckingCep(true);
+                          setCepFeedback('Buscando...');
+                          try {
+                            const res = await fetch(`https://viacep.com.br/ws/${cepInput}/json/`);
+                            const data = await res.json();
+                            if (data.erro) {
+                              setCepFeedback('❌ CEP não encontrado');
+                            } else {
+                              setCepFeedback(`✅ CEP Confirmado: ${data.bairro || ''}, ${data.localidade}-${data.uf}`);
+                              // Tentar encontrar uma cidade correspondente na lista do admin
+                              const foundCity = operatingCities.find(c => 
+                                c.toLowerCase().includes(data.localidade.toLowerCase())
+                              );
+                              if (foundCity) {
+                                setCityInput(foundCity);
+                              } else {
+                                setCepFeedback(`✅ CEP de ${data.localidade}-${data.uf} carregado, mas cidade não cadastrada para operação.`);
+                              }
+                            }
+                          } catch {
+                            setCepFeedback('❌ Erro de conexão com ViaCEP');
+                          } finally {
+                            setIsCheckingCep(false);
+                          }
+                        }}
+                        className={`px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs rounded-xl transition-all flex items-center justify-center shrink-0 cursor-pointer ${isCheckingCep ? 'opacity-50' : ''}`}
+                        disabled={isCheckingCep}
+                      >
+                        {isCheckingCep ? '...' : 'Confirmar'}
+                      </button>
+                    </div>
+                    {cepFeedback && (
+                      <p className="text-[10px] mt-1 text-slate-300 font-semibold">{cepFeedback}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-400 font-bold mb-1">Cidade de Atendimento</label>
+                    <select
+                      value={cityInput}
+                      onChange={e => setCityInput(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white outline-none focus:border-emerald-500"
+                    >
+                      <option value="">Selecione uma cidade...</option>
+                      {operatingCities.map((city, index) => (
+                        <option key={index} value={city}>{city}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div>
@@ -5014,6 +5080,10 @@ export const ProviderPortal: React.FC = () => {
                 }
                 if (cityInput.trim() && cityInput !== provider.city) {
                   submitProfileEditRequest(provider.id, 'city', 'Cidade', provider.city, cityInput);
+                  profileRequestsTriggered = true;
+                }
+                if (cepInput.trim() && cepInput !== provider.cep) {
+                  submitProfileEditRequest(provider.id, 'cep', 'CEP de Localização', provider.cep || 'Não Informado', cepInput);
                   profileRequestsTriggered = true;
                 }
                 if (vehicleModelInput !== provider.vehicleModel) {

@@ -231,7 +231,7 @@ export const ClientPortal: React.FC = () => {
   };
   const theme = getThemeClasses(clientTheme);
 
-  const getStatusConfig = (status: string) => {
+  const getStatusConfig = (status: string, cancellationReason?: string, cancelledBy?: string) => {
     switch (status) {
       case 'solicitado':
       case 'aguardando_despacho_admin':
@@ -347,7 +347,8 @@ export const ClientPortal: React.FC = () => {
         };
       case 'cancelado':
       case 'recusado_cliente':
-      default:
+      default: {
+        const isClientCancelled = cancelledBy === 'Cliente' || cancellationReason === 'Cancelado pelo cliente no portal';
         return {
           theme: 'red' as const,
           badge: 'Orçamento Recusado / Cancelado',
@@ -356,8 +357,11 @@ export const ClientPortal: React.FC = () => {
           textColor: 'text-red-400',
           bgColor: 'bg-red-500/10',
           iconColor: 'text-red-400',
-          desc: 'Este atendimento foi cancelado ou recusado. Se precisar de ajuda, abra uma nova solicitação na Central M1.',
+          desc: isClientCancelled 
+            ? 'QUE PENA QUE VOCÊ CANCELOU, JÁ ESTAVAMOS BUSCANDO UM PROFISSIONAL QUALIFICADO PARA ATENDER A SUA NECESSIDADE, SE QUISER PODERÁ ABRIR UM NOVO CHAMADO!'
+            : 'Este atendimento foi cancelado ou recusado. Se precisar de ajuda, abra uma nova solicitação na Central M1.',
         };
+      }
     }
   };
 
@@ -2115,25 +2119,35 @@ export const ClientPortal: React.FC = () => {
                   <AlertTriangle className="w-8 h-8 animate-pulse" />
                 </div>
                 <h3 className="text-xl font-black text-rose-400 uppercase tracking-tight">
-                  Atendimento Cancelado!
+                  {cancellationNoticeService.cancelledBy === 'Cliente' || cancellationNoticeService.cancellationReason === 'Cancelado pelo cliente no portal'
+                    ? "Chamado Cancelado"
+                    : "Atendimento Cancelado!"
+                  }
                 </h3>
                 <p className="text-sm text-slate-300 leading-relaxed">
-                  Olá, informamos que o seu chamado para <strong className="text-white">"{cancellationNoticeService.title}"</strong> foi cancelado pela Central.
+                  {cancellationNoticeService.cancelledBy === 'Cliente' || cancellationNoticeService.cancellationReason === 'Cancelado pelo cliente no portal'
+                    ? "QUE PENA QUE VOCÊ CANCELOU, JÁ ESTAVAMOS BUSCANDO UM PROFISSIONAL QUALIFICADO PARA ATENDER A SUA NECESSIDADE, SE QUISER PODERÁ ABRIR UM NOVO CHAMADO!"
+                    : `Olá, informamos que o seu chamado para "${cancellationNoticeService.title}" foi cancelado pela Central.`
+                  }
                 </p>
                 
                 {/* Reason box */}
-                <div className="bg-rose-950/40 p-4 rounded-xl border border-rose-500/20 w-full text-left text-xs space-y-2">
-                  <p className="text-rose-300"><strong>Justificativa da Central M1:</strong></p>
-                  <p className="text-slate-200 italic">"{cancellationNoticeService.cancellationReason || 'Falta de profissionais credenciados disponíveis na região.'}"</p>
-                </div>
+                {!(cancellationNoticeService.cancelledBy === 'Cliente' || cancellationNoticeService.cancellationReason === 'Cancelado pelo cliente no portal') && (
+                  <div className="bg-rose-950/40 p-4 rounded-xl border border-rose-500/20 w-full text-left text-xs space-y-2">
+                    <p className="text-rose-300"><strong>Justificativa da Central M1:</strong></p>
+                    <p className="text-slate-200 italic">"{cancellationNoticeService.cancellationReason || 'Falta de profissionais credenciados disponíveis na região.'}"</p>
+                  </div>
+                )}
 
                 {/* Future plan box */}
-                <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-850 w-full text-left text-xs space-y-2">
-                  <p className="text-amber-400 font-bold">🛠️ Providência da Plataforma M1:</p>
-                  <p className="text-slate-300 leading-relaxed">
-                    {cancellationNoticeService.cancellationFutureAction || "Infelizmente não encontramos profissionais para atender sua solicitação, porém já estamos registrando essa demanda em nosso banco de dados e vamos providenciar profissionais qualificados para atender a sua necessidade!"}
-                  </p>
-                </div>
+                {!(cancellationNoticeService.cancelledBy === 'Cliente' || cancellationNoticeService.cancellationReason === 'Cancelado pelo cliente no portal') && (
+                  <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-850 w-full text-left text-xs space-y-2">
+                    <p className="text-amber-400 font-bold">🛠️ Providência da Plataforma M1:</p>
+                    <p className="text-slate-300 leading-relaxed">
+                      {cancellationNoticeService.cancellationFutureAction || "Infelizmente não encontramos profissionais para atender sua solicitação, porém já estamos registrando essa demanda em nosso banco de dados e vamos providenciar profissionais qualificados para atender a sua necessidade!"}
+                    </p>
+                  </div>
+                )}
 
                 <div className="bg-slate-900/30 p-3 rounded-xl w-full text-left text-[10px] text-slate-400">
                   <p><strong>Código do Chamado:</strong> {cancellationNoticeService.code}</p>
@@ -2591,7 +2605,7 @@ export const ClientPortal: React.FC = () => {
 
       {/* 🛰️ ACTIVE REQUEST STATUS TRACKING HUD OVERLAY ("SPAM SOBREPOSTO NA TELA") */}
       {activeService && isOverlayOpen && !isProposedPriceSpamOpen && !spamOnTheWayService && (() => {
-        const statusConfig = getStatusConfig(activeService.status);
+        const statusConfig = getStatusConfig(activeService.status, activeService.cancellationReason, activeService.cancelledBy);
         const isThemeGreen = statusConfig.theme === 'green';
         const isThemeYellow = statusConfig.theme === 'yellow';
         const isThemeRed = statusConfig.theme === 'red';

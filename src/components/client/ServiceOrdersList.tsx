@@ -702,12 +702,28 @@ export const ServiceOrdersList: React.FC<ServiceOrdersListProps> = ({
                         onClick={() => {
                           if (confirm('Deseja realmente cancelar esta solicitação de atendimento?')) {
                             cancelServiceRequest(srv.id, 'Cancelado pelo cliente no portal');
+                            alert('QUE PENA QUE VOCÊ CANCELOU, JÁ ESTAVAMOS BUSCANDO UM PROFISSIONAL QUALIFICADO PARA ATENDER A SUA NECESSIDADE, SE QUISER PODERÁ ABRIR UM NOVO CHAMADO!');
                           }
                         }}
                         className="w-full py-2 bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-500/20 rounded-xl font-bold uppercase text-[9.5px] cursor-pointer"
                       >
                         Cancelar Chamado de Atendimento
                       </button>
+                    )}
+
+                    {srv.status === 'cancelado' && (
+                      <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl space-y-2">
+                        <div className="flex items-center gap-1.5 text-red-400">
+                          <AlertCircle className="w-4 h-4 shrink-0" />
+                          <span className="text-[10px] font-black uppercase">Chamado Cancelado</span>
+                        </div>
+                        <p className="text-[11px] text-slate-300 leading-tight">
+                          {srv.cancelledBy === 'Cliente' || srv.cancellationReason === 'Cancelado pelo cliente no portal'
+                            ? "QUE PENA QUE VOCÊ CANCELOU, JÁ ESTAVAMOS BUSCANDO UM PROFISSIONAL QUALIFICADO PARA ATENDER A SUA NECESSIDADE, SE QUISER PODERÁ ABRIR UM NOVO CHAMADO!"
+                            : (srv.cancellationReason || "Este chamado de atendimento foi cancelado ou recusado pela Central M1.")
+                          }
+                        </p>
+                      </div>
                     )}
                       </>
                     )}
@@ -746,27 +762,37 @@ export const ServiceOrdersList: React.FC<ServiceOrdersListProps> = ({
 
       {/* 🏁 COMPLETED SERVICE DETAILS MODAL OVERLAY */}
       {inspectingCompleted && (
-        <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-xl z-[99999] overflow-y-auto animate-fade-in" id="completed-service-details-modal">
-          <div className="min-h-screen py-6 px-4 flex items-start justify-center pt-4 md:pt-8 pb-12">
-            <div className="bg-slate-900 border-2 border-emerald-500/50 w-full max-w-xl rounded-3xl p-6 sm:p-8 shadow-2xl relative space-y-6 text-white max-h-none overflow-visible">
+        <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-xl z-[99999] flex items-start justify-center pt-8 sm:pt-14 pb-12 p-3 sm:p-5 overflow-y-auto animate-fade-in" id="completed-service-details-modal">
+          <div className="bg-slate-900 border-2 border-emerald-500/50 w-full max-w-xl rounded-3xl flex flex-col shadow-2xl relative text-white max-h-[85vh] overflow-hidden">
+            
+            {/* Header - Pinned */}
+            <div className="p-5 border-b border-slate-800 shrink-0 bg-slate-900 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div className="text-left">
+                  <span className="text-[9px] tracking-[0.1em] font-black text-emerald-400 uppercase block">
+                    🎉 ATENDIMENTO CONCLUÍDO E AVALIADO
+                  </span>
+                  <h2 className="text-base font-black text-white leading-tight uppercase font-sans">
+                    Dados do Serviço Executado
+                  </h2>
+                </div>
+              </div>
               
-              {/* Sticky close button */}
               <button
                 type="button"
                 onClick={() => setInspectingCompleted(null)}
-                className="absolute top-4 right-4 p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-full transition-colors cursor-pointer"
+                className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-full transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
+            </div>
 
-              {/* Header section with completion badge */}
-              <div className="text-center space-y-2">
-                <span className="text-[9px] tracking-[0.25em] font-black text-emerald-400 uppercase bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                  🎉 ATENDIMENTO CONCLUÍDO E AVALIADO
-                </span>
-                <h2 className="text-xl sm:text-2xl font-black text-white leading-tight uppercase font-sans">
-                  Dados do Serviço Executado
-                </h2>
+            {/* Scrollable Body */}
+            <div className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-5 text-slate-200 text-left">
+              <div className="text-center sm:text-left pb-2">
                 <p className="text-xs text-slate-400">
                   Chamado Código <strong className="text-white">#{inspectingCompleted.code}</strong> • Finalizado com garantia M1 Brasil
                 </p>
@@ -852,17 +878,19 @@ export const ServiceOrdersList: React.FC<ServiceOrdersListProps> = ({
                   )}
                 </div>
               )}
+            </div>
 
-              {/* Close Button */}
+            {/* Footer - Pinned */}
+            <div className="p-4 border-t border-slate-800 bg-slate-900 shrink-0">
               <button
                 type="button"
                 onClick={() => setInspectingCompleted(null)}
-                className="w-full py-3 bg-slate-800 hover:bg-slate-750 text-slate-200 font-black text-xs uppercase tracking-wider rounded-xl cursor-pointer hover:text-white transition-colors"
+                className="w-full py-3.5 bg-slate-800 hover:bg-slate-750 text-slate-200 font-black text-xs uppercase tracking-wider rounded-xl cursor-pointer hover:text-white transition-colors"
               >
                 Fechar Visualização
               </button>
-
             </div>
+
           </div>
         </div>
       )}
